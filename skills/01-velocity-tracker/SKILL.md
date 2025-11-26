@@ -412,9 +412,9 @@ export default function VelocityTracker() {
             <div className="bg-slate-800 rounded-lg p-4">
               <div className="text-slate-400 text-sm mb-1">vs Baseline</div>
               <div className={`text-xl font-bold ${baselineRatio > 1.5 ? 'text-orange-400' : baselineRatio > 1 ? 'text-green-400' : 'text-red-400'}`}>
-                {baselineRatio > 1 ? '+' : ''}{((baselineRatio - 1) * 100).toFixed(0)}%
+                {baselineRatio >= 1 ? '+' : ''}{((baselineRatio - 1) * 100).toFixed(0)}%
               </div>
-              <div className="text-slate-500 text-xs">above hourly norm</div>
+              <div className="text-slate-500 text-xs">{baselineRatio >= 1 ? 'above' : 'below'} hourly norm</div>
             </div>
             <div className="bg-slate-800 rounded-lg p-4">
               <div className="text-slate-400 text-sm mb-1">Peak Rate</div>
