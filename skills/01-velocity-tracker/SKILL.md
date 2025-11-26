@@ -43,31 +43,46 @@ const baselinePosts = await mcp_xpoz.getTwitterPostsByKeywords({
 });
 ```
 
-### Step 2: Calculate Hourly Baseline
+### Step 2: Calculate Hourly Baseline (CRITICAL)
+
+For EACH hour (0-23), calculate the average mentions across the last 3 days:
 
 ```javascript
 // Group posts by hour-of-day across 3 days
-// baseline[hour] = average mentions for that hour
+// baseline[hour] = average mentions for that hour over 3 days
 const calculateBaseline = (posts) => {
-  const hourlyBuckets = Array(24).fill([]);
+  // Initialize buckets for each hour (0-23)
+  const hourlyBuckets = Array.from({ length: 24 }, () => []);
+
   posts.forEach(post => {
-    const hour = new Date(post.createdAt).getHours();
+    const hour = new Date(post.createdAt).getUTCHours(); // Use UTC for consistency
     hourlyBuckets[hour].push(post);
   });
-  return hourlyBuckets.map(bucket => bucket.length / 3); // 3-day average
+
+  // Return avg for each hour: total posts in that hour / 3 days
+  return hourlyBuckets.map(bucket => bucket.length / 3);
 };
+
+// Example: If hour 14:00 had 45, 60, 75 mentions over 3 days:
+// baseline[14] = (45 + 60 + 75) / 3 = 60 mentions expected at 14:00
 ```
 
 ### Step 3: Calculate Normalized Velocity
 
 ```javascript
-// For each hour in last 24h:
-// normalizedVelocity = actualMentions / baselineForThatHour
-// Scale to 0-10 where 1.0x baseline = 5.0, 2.0x baseline = 7.5, etc.
+// For each hour today, compare actual mentions to baseline for that hour
+// Scale: 5.0 = 1x baseline (normal), 7.5 = 2x baseline, 10.0 = 3x+ baseline
 const normalizeVelocity = (actual, baseline) => {
   const ratio = actual / Math.max(baseline, 1);
+  // Formula: velocity = 2.5 + (ratio * 2.5), clamped to 0-10
   return Math.min(10, Math.max(0, 2.5 + (ratio * 2.5)));
 };
+
+// To convert velocity back to ratio: ratio = (velocity - 2.5) / 2.5
+// Examples:
+//   velocity 5.0 → ratio 1.0x (normal)
+//   velocity 7.5 → ratio 2.0x (2x normal)
+//   velocity 10.0 → ratio 3.0x (3x normal)
 ```
 
 ## Category Mapping
@@ -108,6 +123,9 @@ export default function VelocityTracker() {
   // The ticker this artifact was generated for (set by Claude)
   const dataLoadedFor = 'TSLA'; // CLAUDE: Replace with actual ticker when generating
 
+  // Current hour (0-23) - used to filter out future hours
+  const currentHour = new Date().getHours();
+
   // Handle ticker search
   const handleSearch = () => {
     const newTicker = tickerInput.toUpperCase().trim();
@@ -130,40 +148,45 @@ export default function VelocityTracker() {
   // Category is determined by ticker (use mapping from skill instructions)
   const category = 'EV / Electric Vehicles'; // Auto-detect from ticker
 
-  // Hourly data for last 24 hours (normalized velocity)
-  const hourlyData = [
-    { time: '00:00', actual: 45, baseline: 40, velocity: 5.6 },
-    { time: '01:00', actual: 32, baseline: 35, velocity: 4.8 },
-    { time: '02:00', actual: 28, baseline: 30, velocity: 4.7 },
-    { time: '03:00', actual: 22, baseline: 25, velocity: 4.5 },
-    { time: '04:00', actual: 25, baseline: 28, velocity: 4.6 },
-    { time: '05:00', actual: 35, baseline: 32, velocity: 5.2 },
-    { time: '06:00', actual: 58, baseline: 45, velocity: 5.7 },
-    { time: '07:00', actual: 85, baseline: 65, velocity: 5.8 },
-    { time: '08:00', actual: 120, baseline: 90, velocity: 5.8 },
-    { time: '09:00', actual: 180, baseline: 110, velocity: 6.6 },
-    { time: '10:00', actual: 210, baseline: 125, velocity: 6.7 },
-    { time: '11:00', actual: 195, baseline: 130, velocity: 6.3 },
-    { time: '12:00', actual: 175, baseline: 120, velocity: 6.1 },
-    { time: '13:00', actual: 185, baseline: 115, velocity: 6.5 },
-    { time: '14:00', actual: 220, baseline: 120, velocity: 7.1 },
-    { time: '15:00', actual: 280, baseline: 125, velocity: 8.1 },
-    { time: '16:00', actual: 310, baseline: 130, velocity: 8.5 },
-    { time: '17:00', actual: 290, baseline: 125, velocity: 8.3 },
-    { time: '18:00', actual: 265, baseline: 115, velocity: 8.3 },
-    { time: '19:00', actual: 240, baseline: 105, velocity: 8.2 },
-    { time: '20:00', actual: 210, baseline: 95, velocity: 8.0 },
-    { time: '21:00', actual: 175, baseline: 80, velocity: 8.0 },
-    { time: '22:00', actual: 120, baseline: 60, velocity: 7.5 },
-    { time: '23:00', actual: 75, baseline: 50, velocity: 6.3 },
+  // FULL hourly data for 24 hours (CLAUDE: Replace with real XPOZ data)
+  // Each entry needs: actual mentions, baseline (3-day avg for that hour), and calculated velocity
+  const allHourlyData = [
+    { time: '00:00', hour: 0, actual: 45, baseline: 40, velocity: 5.6 },
+    { time: '01:00', hour: 1, actual: 32, baseline: 35, velocity: 4.8 },
+    { time: '02:00', hour: 2, actual: 28, baseline: 30, velocity: 4.7 },
+    { time: '03:00', hour: 3, actual: 22, baseline: 25, velocity: 4.5 },
+    { time: '04:00', hour: 4, actual: 25, baseline: 28, velocity: 4.6 },
+    { time: '05:00', hour: 5, actual: 35, baseline: 32, velocity: 5.2 },
+    { time: '06:00', hour: 6, actual: 58, baseline: 45, velocity: 5.7 },
+    { time: '07:00', hour: 7, actual: 85, baseline: 65, velocity: 5.8 },
+    { time: '08:00', hour: 8, actual: 120, baseline: 90, velocity: 5.8 },
+    { time: '09:00', hour: 9, actual: 180, baseline: 110, velocity: 6.6 },
+    { time: '10:00', hour: 10, actual: 210, baseline: 125, velocity: 6.7 },
+    { time: '11:00', hour: 11, actual: 195, baseline: 130, velocity: 6.3 },
+    { time: '12:00', hour: 12, actual: 175, baseline: 120, velocity: 6.1 },
+    { time: '13:00', hour: 13, actual: 185, baseline: 115, velocity: 6.5 },
+    { time: '14:00', hour: 14, actual: 220, baseline: 120, velocity: 7.1 },
+    { time: '15:00', hour: 15, actual: 280, baseline: 125, velocity: 8.1 },
+    { time: '16:00', hour: 16, actual: 310, baseline: 130, velocity: 8.5 },
+    { time: '17:00', hour: 17, actual: 290, baseline: 125, velocity: 8.3 },
+    { time: '18:00', hour: 18, actual: 265, baseline: 115, velocity: 8.3 },
+    { time: '19:00', hour: 19, actual: 240, baseline: 105, velocity: 8.2 },
+    { time: '20:00', hour: 20, actual: 210, baseline: 95, velocity: 8.0 },
+    { time: '21:00', hour: 21, actual: 175, baseline: 80, velocity: 8.0 },
+    { time: '22:00', hour: 22, actual: 120, baseline: 60, velocity: 7.5 },
+    { time: '23:00', hour: 23, actual: 75, baseline: 50, velocity: 6.3 },
   ];
 
-  // Current stats (from most recent hour)
-  const currentVelocity = 8.5;
-  const currentActual = 310;
-  const currentBaseline = 130;
+  // CRITICAL: Filter to only show hours up to current time (no future hours!)
+  const hourlyData = allHourlyData.filter(d => d.hour <= currentHour);
+
+  // Current stats - ALWAYS derive from the most recent hour's data
+  const latestHourData = hourlyData[hourlyData.length - 1];
+  const currentVelocity = latestHourData.velocity;
+  const currentActual = latestHourData.actual;
+  const currentBaseline = latestHourData.baseline;
   const baselineRatio = (currentActual / currentBaseline);
-  const trend = 'accelerating'; // accelerating, decelerating, stable
+  const trend = 'accelerating'; // accelerating, decelerating, stable (calculate from last 3 hours)
   const signal = baselineRatio > 2 ? 'VERY_HIGH' : baselineRatio > 1.5 ? 'HIGH_ACTIVITY' : baselineRatio > 1.2 ? 'ELEVATED' : baselineRatio > 0.8 ? 'NORMAL' : 'LOW';
 
   // Category peers for comparison (from XPOZ MCP)
@@ -175,14 +198,15 @@ export default function VelocityTracker() {
     { ticker: 'XPEV', velocity: 3.2, trend: 'stable', mentions: 45, color: '#8b5cf6' },
   ];
 
-  // 24h comparison data for line chart
+  // Comparison data for line chart (already filtered by hourlyData)
+  // CLAUDE: Replace peer velocity values with real XPOZ data for each ticker
   const comparisonData = hourlyData.map((h, i) => ({
     time: h.time,
     TSLA: h.velocity,
-    RIVN: 4.5 + Math.sin(i / 4) * 1.5,
-    LCID: 4.0 + Math.cos(i / 3) * 0.8,
-    NIO: 4.2 + Math.sin(i / 5) * 1.2,
-    XPEV: 3.0 + Math.cos(i / 4) * 0.5,
+    RIVN: 4.5 + Math.sin(i / 4) * 1.5,  // Replace with real data
+    LCID: 4.0 + Math.cos(i / 3) * 0.8,  // Replace with real data
+    NIO: 4.2 + Math.sin(i / 5) * 1.2,   // Replace with real data
+    XPEV: 3.0 + Math.cos(i / 4) * 0.5,  // Replace with real data
   }));
   // === END REPLACE ===
 
@@ -310,7 +334,7 @@ export default function VelocityTracker() {
         <>
           {/* Velocity Chart */}
           <div className="bg-slate-800 rounded-lg p-4 mb-6">
-            <h3 className="text-sm font-medium text-slate-400 mb-3">Normalized Velocity (24h) — Y-axis: Multiple of Hourly Baseline</h3>
+            <h3 className="text-sm font-medium text-slate-400 mb-3">Normalized Velocity (Today) — Showing data through {hourlyData[hourlyData.length - 1]?.time || 'now'}</h3>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={hourlyData}>
@@ -331,8 +355,15 @@ export default function VelocityTracker() {
                   />
                   <Tooltip
                     contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px' }}
-                    formatter={(value, name) => {
-                      if (name === 'velocity') return [`${value.toFixed(1)} (${(value/2.5).toFixed(1)}x baseline)`, 'Velocity'];
+                    formatter={(value, name, props) => {
+                      if (name === 'velocity') {
+                        // Correct formula: ratio = (velocity - 2.5) / 2.5
+                        // velocity 5.0 = 1x baseline, 7.5 = 2x baseline, 10.0 = 3x baseline
+                        const ratio = ((value - 2.5) / 2.5).toFixed(1);
+                        const actual = props.payload.actual;
+                        const baseline = props.payload.baseline;
+                        return [`${actual} mentions (${ratio}x baseline of ${baseline})`, 'Activity'];
+                      }
                       return [value, name];
                     }}
                   />
@@ -359,14 +390,14 @@ export default function VelocityTracker() {
               <div className="text-slate-500 text-xs">above hourly norm</div>
             </div>
             <div className="bg-slate-800 rounded-lg p-4">
-              <div className="text-slate-400 text-sm mb-1">Current Rate</div>
+              <div className="text-slate-400 text-sm mb-1">Latest Rate ({latestHourData?.time})</div>
               <div className="text-xl font-bold">{currentActual}</div>
               <div className="text-slate-500 text-xs">mentions/hr</div>
             </div>
             <div className="bg-slate-800 rounded-lg p-4">
-              <div className="text-slate-400 text-sm mb-1">Baseline (this hr)</div>
-              <div className="text-xl font-bold text-slate-300">{currentBaseline}</div>
-              <div className="text-slate-500 text-xs">expected mentions/hr</div>
+              <div className="text-slate-400 text-sm mb-1">24h Total</div>
+              <div className="text-xl font-bold text-slate-300">{hourlyData.reduce((sum, d) => sum + d.actual, 0)}</div>
+              <div className="text-slate-500 text-xs">total mentions</div>
             </div>
           </div>
         </>
@@ -494,10 +525,14 @@ When generating this artifact in Claude.ai, you MUST:
 ## Instructions for Claude
 
 1. **Initial Generation** - When user asks about velocity for any ticker:
-   - Use XPOZ MCP `getTwitterPostsByKeywords` to fetch last 24h of mentions
-   - Use XPOZ MCP to fetch last 3 days for baseline calculation
-   - Calculate hourly baseline (avg per hour over 3 days)
-   - Calculate normalized velocity for each hour
+   - Use XPOZ MCP `getTwitterPostsByKeywords` to fetch TODAY's mentions (startDate = today)
+   - Use XPOZ MCP to fetch last 3 days for baseline calculation (startDate = 3 days ago, endDate = today)
+   - **BASELINE CALCULATION (CRITICAL)**:
+     - Group baseline posts by hour-of-day (0-23)
+     - For each hour, calculate: `baseline[hour] = totalPostsInThatHour / 3`
+     - This gives expected mentions per hour based on historical average
+   - Calculate normalized velocity for each hour: `velocity = 2.5 + (actual/baseline * 2.5)`
+   - **ONLY include hours up to current time** (no future hours!)
    - Identify category and fetch peer data
    - **Set `dataLoadedFor` to the ticker you fetched data for**
    - **Set `tickerInput` and `ticker` initial values to match**
@@ -508,12 +543,16 @@ When generating this artifact in Claude.ai, you MUST:
    - `tickerInput` initial value = the ticker
    - `ticker` initial value = the ticker
    - `category` = detected category
-   - `hourlyData` = real hourly data array
-   - `currentVelocity`, `currentActual`, `currentBaseline` = real values
+   - `allHourlyData` = real hourly data array with `{ time, hour, actual, baseline, velocity }`
    - `categoryPeers` = real peer data
-   - `comparisonData` = real comparison data
+   - `comparisonData` is auto-generated from hourlyData (already filtered)
 
-3. **TICKER CHANGE WORKFLOW** (Critical):
+3. **CRITICAL DATA CONSISTENCY**:
+   - The header velocity score MUST match `latestHourData.velocity` (auto-calculated)
+   - Do NOT set `currentVelocity`, `currentActual`, `currentBaseline` manually - they derive from `latestHourData`
+   - Graph stops at current hour (handled by `hourlyData = allHourlyData.filter(d => d.hour <= currentHour)`)
+
+4. **TICKER CHANGE WORKFLOW** (Critical):
    When user asks to see a different ticker (e.g., "show me AAPL velocity"):
    - Fetch ALL new data from XPOZ MCP for the new ticker
    - Generate a **NEW artifact** with the new ticker's data
@@ -521,4 +560,4 @@ When generating this artifact in Claude.ai, you MUST:
    - The new artifact completely replaces the old one
    - **Never reuse data from previous ticker**
 
-4. The artifact is interactive - user can switch between Detail and Comparison tabs
+5. The artifact is interactive - user can switch between Detail and Comparison tabs
