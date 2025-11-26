@@ -123,8 +123,9 @@ export default function VelocityTracker() {
   // The ticker this artifact was generated for (set by Claude)
   const dataLoadedFor = 'TSLA'; // CLAUDE: Replace with actual ticker when generating
 
-  // Current hour (0-23) - used to filter out future hours
-  const currentHour = new Date().getHours();
+  // CLAUDE: Set this to the user's current hour when generating the artifact
+  // This ensures the graph shows data up to the correct local time
+  const generatedAtHour = 16; // CLAUDE: Replace with user's current hour (0-23)
 
   // Handle ticker search
   const handleSearch = () => {
@@ -177,8 +178,8 @@ export default function VelocityTracker() {
     { time: '23:00', hour: 23, actual: 75, baseline: 50, velocity: 6.3 },
   ];
 
-  // CRITICAL: Filter to only show hours up to current time (no future hours!)
-  const hourlyData = allHourlyData.filter(d => d.hour <= currentHour);
+  // Filter to only show hours up to the time when artifact was generated
+  const hourlyData = allHourlyData.filter(d => d.hour <= generatedAtHour);
 
   // Current stats - ALWAYS derive from the most recent hour's data
   const latestHourData = hourlyData[hourlyData.length - 1];
@@ -390,14 +391,14 @@ export default function VelocityTracker() {
               <div className="text-slate-500 text-xs">above hourly norm</div>
             </div>
             <div className="bg-slate-800 rounded-lg p-4">
-              <div className="text-slate-400 text-sm mb-1">Latest Rate ({latestHourData?.time})</div>
-              <div className="text-xl font-bold">{currentActual}</div>
+              <div className="text-slate-400 text-sm mb-1">Peak Rate</div>
+              <div className="text-xl font-bold">{Math.max(...hourlyData.map(d => d.actual))}</div>
               <div className="text-slate-500 text-xs">mentions/hr</div>
             </div>
             <div className="bg-slate-800 rounded-lg p-4">
-              <div className="text-slate-400 text-sm mb-1">24h Total</div>
-              <div className="text-xl font-bold text-slate-300">{hourlyData.reduce((sum, d) => sum + d.actual, 0)}</div>
-              <div className="text-slate-500 text-xs">total mentions</div>
+              <div className="text-slate-400 text-sm mb-1">Avg for {latestHourData?.time}</div>
+              <div className="text-xl font-bold text-slate-300">{currentBaseline}</div>
+              <div className="text-slate-500 text-xs">baseline mentions/hr</div>
             </div>
           </div>
         </>
@@ -542,15 +543,17 @@ When generating this artifact in Claude.ai, you MUST:
    - `dataLoadedFor` = the ticker
    - `tickerInput` initial value = the ticker
    - `ticker` initial value = the ticker
+   - `generatedAtHour` = user's current hour (0-23) in their LOCAL timezone
    - `category` = detected category
    - `allHourlyData` = real hourly data array with `{ time, hour, actual, baseline, velocity }`
    - `categoryPeers` = real peer data
    - `comparisonData` is auto-generated from hourlyData (already filtered)
 
 3. **CRITICAL DATA CONSISTENCY**:
+   - **SET `generatedAtHour`** to user's local hour (ask if unsure, or use context clues)
    - The header velocity score MUST match `latestHourData.velocity` (auto-calculated)
    - Do NOT set `currentVelocity`, `currentActual`, `currentBaseline` manually - they derive from `latestHourData`
-   - Graph stops at current hour (handled by `hourlyData = allHourlyData.filter(d => d.hour <= currentHour)`)
+   - Graph stops at `generatedAtHour` (handled by filter on `allHourlyData`)
 
 4. **TICKER CHANGE WORKFLOW** (Critical):
    When user asks to see a different ticker (e.g., "show me AAPL velocity"):
