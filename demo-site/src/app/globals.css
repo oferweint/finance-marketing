@@ -1,0 +1,39 @@
+@import "tailwindcss";
+
+:root {
+  --background: #0a0a0a;
+  --foreground: #ededed;
+  --primary: #3b82f6;
+  --primary-dark: #2563eb;
+  --secondary: #1e293b;
+  --accent: #10b981;
+  --danger: #ef4444;
+  --warning: #f59e0b;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* Widget card styles */
+.widget-card {
+  @apply bg-gray-900 border border-gray-800 rounded-xl p-6 hover:border-blue-500/50 transition-all;
+}
+
+.widget-card:hover {
+  @apply shadow-lg shadow-blue-500/10;
+}
+
+/* Signal indicator colors */
+.signal-very-high { @apply text-red-500 bg-red-500/10; }
+.signal-high { @apply text-orange-500 bg-orange-500/10; }
+.signal-elevated { @apply text-yellow-500 bg-yellow-500/10; }
+.signal-normal { @apply text-green-500 bg-green-500/10; }
+.signal-low { @apply text-blue-500 bg-blue-500/10; }
+
+/* Sentiment colors */
+.sentiment-bullish { @apply text-green-400; }
+.sentiment-bearish { @apply text-red-400; }
+.sentiment-neutral { @apply text-gray-400; }
