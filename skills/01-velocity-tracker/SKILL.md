@@ -46,28 +46,25 @@ const baselinePosts = await mcp_xpoz.getTwitterPostsByKeywords({
 
 ### Common Ticker → Company Name Mapping
 
-Always search for BOTH symbol and company name:
+**CRITICAL: Always search for BOTH ticker symbol AND company name!**
 
-| Ticker | Company Name(s) to include |
-|--------|---------------------------|
-| TSLA | Tesla |
-| NVDA | NVIDIA, Nvidia |
-| INTC | Intel |
-| AAPL | Apple |
-| GOOGL/GOOG | Google, Alphabet |
-| MSFT | Microsoft |
-| AMZN | Amazon |
-| META | Meta, Facebook |
-| AMD | AMD (same) |
-| COIN | Coinbase |
-| GME | GameStop |
-| AMC | AMC (same) |
-| RIVN | Rivian |
-| NIO | NIO (same) |
-| BTC | Bitcoin |
-| ETH | Ethereum |
+| Ticker | Query to use |
+|--------|-------------|
+| NVDA | `"$NVDA OR #NVDA OR NVDA OR NVIDIA OR Nvidia"` |
+| INTC | `"$INTC OR #INTC OR INTC OR Intel"` |
+| TSLA | `"$TSLA OR #TSLA OR TSLA OR Tesla"` |
+| AAPL | `"$AAPL OR #AAPL OR AAPL OR Apple"` |
+| GOOGL | `"$GOOGL OR #GOOGL OR GOOGL OR Google OR Alphabet"` |
+| MSFT | `"$MSFT OR #MSFT OR MSFT OR Microsoft"` |
+| AMZN | `"$AMZN OR #AMZN OR AMZN OR Amazon"` |
+| META | `"$META OR #META OR META OR Facebook"` |
+| AMD | `"$AMD OR #AMD OR AMD"` |
+| COIN | `"$COIN OR #COIN OR COIN OR Coinbase"` |
+| GME | `"$GME OR #GME OR GME OR GameStop"` |
+| BTC | `"$BTC OR #BTC OR BTC OR Bitcoin"` |
+| ETH | `"$ETH OR #ETH OR ETH OR Ethereum"` |
 
-For other tickers, infer the company name or ask the user.
+For other tickers, include: `$TICKER OR #TICKER OR TICKER OR CompanyName`
 
 ### Step 2: Calculate Hourly Baseline (CRITICAL)
 
