@@ -23,12 +23,13 @@ Activate this skill when the user asks about:
 
 ### Step 1: Fetch Real Data from XPOZ MCP
 
-Use these MCP tools to get real Twitter data:
+Use these MCP tools to get real Twitter data. **IMPORTANT: Search for BOTH the ticker symbol AND company name** for comprehensive coverage:
 
 ```javascript
 // Get posts for the ticker (last 24 hours)
+// CRITICAL: Include both symbol AND company name (case-insensitive)
 const posts = await mcp_xpoz.getTwitterPostsByKeywords({
-  query: "$TSLA OR #TSLA OR TSLA",
+  query: "$TSLA OR #TSLA OR TSLA OR Tesla",  // Symbol + company name
   startDate: "YYYY-MM-DD", // 24 hours ago
   endDate: "YYYY-MM-DD",   // today
   fields: ["id", "text", "createdAt", "authorUsername"]
@@ -36,12 +37,37 @@ const posts = await mcp_xpoz.getTwitterPostsByKeywords({
 
 // Get baseline data (last 3 days for hourly averages)
 const baselinePosts = await mcp_xpoz.getTwitterPostsByKeywords({
-  query: "$TSLA OR #TSLA OR TSLA",
+  query: "$TSLA OR #TSLA OR TSLA OR Tesla",  // Same query for consistency
   startDate: "YYYY-MM-DD", // 3 days ago
   endDate: "YYYY-MM-DD",   // today
   fields: ["id", "createdAt"]
 });
 ```
+
+### Common Ticker → Company Name Mapping
+
+Always search for BOTH symbol and company name:
+
+| Ticker | Company Name(s) to include |
+|--------|---------------------------|
+| TSLA | Tesla |
+| NVDA | NVIDIA, Nvidia |
+| INTC | Intel |
+| AAPL | Apple |
+| GOOGL/GOOG | Google, Alphabet |
+| MSFT | Microsoft |
+| AMZN | Amazon |
+| META | Meta, Facebook |
+| AMD | AMD (same) |
+| COIN | Coinbase |
+| GME | GameStop |
+| AMC | AMC (same) |
+| RIVN | Rivian |
+| NIO | NIO (same) |
+| BTC | Bitcoin |
+| ETH | Ethereum |
+
+For other tickers, infer the company name or ask the user.
 
 ### Step 2: Calculate Hourly Baseline (CRITICAL)
 
