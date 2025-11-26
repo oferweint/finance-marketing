@@ -137,39 +137,14 @@ Generate this component with real data from XPOZ MCP:
 ```jsx
 import React, { useState } from 'react';
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, Legend } from 'recharts';
-import { Activity, TrendingUp, TrendingDown, Minus, Search, Users } from 'lucide-react';
+import { Activity, TrendingUp, TrendingDown, Minus, Users } from 'lucide-react';
 
 export default function VelocityTracker() {
   const [activeTab, setActiveTab] = useState('detail');
-  const [tickerInput, setTickerInput] = useState('TSLA');
-  const [ticker, setTicker] = useState('TSLA');
-  const [isLoading, setIsLoading] = useState(false);
-  const [needsRefresh, setNeedsRefresh] = useState(false);
 
-  // The ticker this artifact was generated for (set by Claude)
-  const dataLoadedFor = 'TSLA'; // CLAUDE: Replace with actual ticker when generating
-
-  // CLAUDE: Set this to the user's current hour when generating the artifact
-  // This ensures the graph shows data up to the correct local time
+  // CLAUDE: Set these values when generating the artifact
+  const ticker = 'TSLA'; // CLAUDE: Replace with actual ticker
   const generatedAtHour = 16; // CLAUDE: Replace with user's current hour (0-23)
-
-  // Handle ticker search
-  const handleSearch = () => {
-    const newTicker = tickerInput.toUpperCase().trim();
-    if (newTicker && newTicker !== dataLoadedFor) {
-      setIsLoading(true);
-      setTicker(newTicker);
-      // Show loading for feedback, then prompt user to ask Claude for refresh
-      setTimeout(() => {
-        setIsLoading(false);
-        setNeedsRefresh(true);
-      }, 800);
-    }
-  };
-
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter') handleSearch();
-  };
 
   // === REPLACE WITH REAL DATA FROM XPOZ MCP ===
   // Category is determined by ticker (use mapping from skill instructions)
@@ -252,68 +227,7 @@ export default function VelocityTracker() {
   const trendColor = trend === 'accelerating' ? 'text-green-400' : trend === 'decelerating' ? 'text-red-400' : 'text-gray-400';
 
   return (
-    <div className="w-full max-w-5xl mx-auto p-6 bg-slate-900 rounded-xl text-white relative">
-      {/* Loading Overlay */}
-      {isLoading && (
-        <div className="absolute inset-0 bg-slate-900/90 flex items-center justify-center z-50 rounded-xl">
-          <div className="text-center">
-            <div className="w-12 h-12 border-4 border-blue-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <div className="text-xl font-bold text-blue-400">Loading {ticker}...</div>
-          </div>
-        </div>
-      )}
-
-      {/* Refresh Prompt - Shows when user requests different ticker */}
-      {needsRefresh && !isLoading && (
-        <div className="absolute inset-0 bg-slate-900/95 flex items-center justify-center z-50 rounded-xl">
-          <div className="text-center p-8 max-w-md">
-            <div className="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Activity className="w-8 h-8 text-blue-400" />
-            </div>
-            <div className="text-xl font-bold text-white mb-2">Update to {ticker}?</div>
-            <div className="text-slate-400 mb-4">
-              Click below to fetch velocity data for <span className="text-blue-400 font-bold">{ticker}</span>
-            </div>
-            <button
-              onClick={() => { setNeedsRefresh(false); /* Claude will regenerate artifact with new data */ }}
-              className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-bold text-white transition-colors mb-3"
-            >
-              Recalculate for {ticker}
-            </button>
-            <button
-              onClick={() => { setNeedsRefresh(false); setTickerInput(dataLoadedFor); setTicker(dataLoadedFor); }}
-              className="text-slate-500 hover:text-slate-300 text-sm underline"
-            >
-              Cancel and keep viewing {dataLoadedFor}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Ticker Search Input */}
-      <div className="mb-6">
-        <div className="flex gap-2">
-          <div className="relative flex-1 max-w-xs">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input
-              type="text"
-              value={tickerInput}
-              onChange={(e) => setTickerInput(e.target.value.toUpperCase())}
-              onKeyPress={handleKeyPress}
-              placeholder="Enter ticker (e.g., AAPL)"
-              className="w-full pl-10 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
-            />
-          </div>
-          <button
-            onClick={handleSearch}
-            disabled={isLoading}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 rounded-lg font-medium transition-colors"
-          >
-            {isLoading ? 'Loading...' : 'Search'}
-          </button>
-        </div>
-      </div>
-
+    <div className="w-full max-w-5xl mx-auto p-6 bg-slate-900 rounded-xl text-white">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
@@ -546,8 +460,7 @@ When generating this artifact in Claude.ai, you MUST:
 1. Save the file with `.jsx` extension
 2. Use the exact format: `/mnt/user-data/outputs/velocity-tracker.jsx`
 3. Replace ALL sample data with real data from XPOZ MCP before rendering
-4. **CRITICAL**: When ticker changes, recalculate ALL data for new ticker
-5. **LOADING STATE**: Show "Loading..." or spinner while fetching new data
+4. **CRITICAL**: When ticker changes, generate a NEW artifact with fresh data
 
 ## Instructions for Claude
 
@@ -559,34 +472,24 @@ When generating this artifact in Claude.ai, you MUST:
      - For each hour, calculate: `baseline[hour] = totalPostsInThatHour / 3`
      - This gives expected mentions per hour based on historical average
    - Calculate normalized velocity for each hour: `velocity = 2.5 + (actual/baseline * 2.5)`
-   - **ONLY include hours up to current time** (no future hours!)
+   - **ONLY include hours up to user's current LOCAL time** (no future hours!)
    - Identify category and fetch peer data
-   - **Set `dataLoadedFor` to the ticker you fetched data for**
-   - **Set `tickerInput` and `ticker` initial values to match**
    - Render the React artifact with real data
 
 2. **Replace ALL sample data** in the component with actual XPOZ data:
-   - `dataLoadedFor` = the ticker
-   - `tickerInput` initial value = the ticker
-   - `ticker` initial value = the ticker
+   - `ticker` = the ticker symbol (e.g., 'INTC')
    - `generatedAtHour` = user's current hour (0-23) in their LOCAL timezone
-   - `category` = detected category
+   - `category` = detected category from mapping
    - `allHourlyData` = real hourly data array with `{ time, hour, actual, baseline, velocity }`
-   - `categoryPeers` = real peer data
+   - `categoryPeers` = real peer data for comparison tab
    - `comparisonData` is auto-generated from hourlyData (already filtered)
 
 3. **CRITICAL DATA CONSISTENCY**:
    - **SET `generatedAtHour`** to user's local hour (ask if unsure, or use context clues)
-   - The header velocity score MUST match `latestHourData.velocity` (auto-calculated)
+   - The header velocity score is auto-calculated from `latestHourData.velocity`
    - Do NOT set `currentVelocity`, `currentActual`, `currentBaseline` manually - they derive from `latestHourData`
    - Graph stops at `generatedAtHour` (handled by filter on `allHourlyData`)
 
-4. **TICKER CHANGE WORKFLOW** (Critical):
-   When user asks to see a different ticker (e.g., "show me AAPL velocity"):
-   - Fetch ALL new data from XPOZ MCP for the new ticker
-   - Generate a **NEW artifact** with the new ticker's data
-   - Update ALL variables: `dataLoadedFor`, `tickerInput`, `ticker`, and all data arrays
-   - The new artifact completely replaces the old one
-   - **Never reuse data from previous ticker**
+4. **TICKER CHANGE**: When user asks for a different ticker, generate a completely NEW artifact with fresh data
 
 5. The artifact is interactive - user can switch between Detail and Comparison tabs
