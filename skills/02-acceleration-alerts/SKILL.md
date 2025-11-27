@@ -19,6 +19,26 @@ Activate this skill when the user asks about:
 - "Social momentum alerts for [STOCK]"
 - "Show me spike alerts for [SYMBOL]"
 
+### ⚠️ CRITICAL: Query Expansion (MUST DO!)
+
+Before fetching Twitter data for ANY ticker, you MUST expand the query to include the company name. **Searching only for ticker symbols ($GOOG, #GOOG) will miss 80%+ of mentions!**
+
+**For each ticker, use an expanded query:**
+
+| Ticker | Expanded Query |
+|--------|----------------|
+| TSLA | `$TSLA OR #TSLA OR TSLA OR Tesla` |
+| NVDA | `$NVDA OR #NVDA OR NVDA OR NVIDIA` |
+| GOOGL | `$GOOG OR #GOOG OR GOOG OR $GOOGL OR #GOOGL OR GOOGL OR Google OR Alphabet` |
+| AAPL | `$AAPL OR #AAPL OR AAPL OR Apple` |
+| MSFT | `$MSFT OR #MSFT OR MSFT OR Microsoft` |
+
+**For other tickers**, look up the company name via web search: `"{TICKER} stock company name"`
+
+**Without query expansion:**
+- GOOGL: ~20 mentions/day ❌
+- With expansion: ~150+ mentions/day ✅
+
 ## Data Flow
 
 ### Step 1: Fetch Data from XPOZ MCP
@@ -26,7 +46,7 @@ Activate this skill when the user asks about:
 ```javascript
 // Get posts for the ticker (last 24-48 hours for spike detection)
 const posts = await mcp_xpoz.getTwitterPostsByKeywords({
-  query: "$NVDA OR #NVDA OR NVDA",
+  query: "$NVDA OR #NVDA OR NVDA OR NVIDIA", // MUST include company name!
   startDate: "YYYY-MM-DD", // 48 hours ago
   endDate: "YYYY-MM-DD",   // today
   fields: ["id", "text", "createdAt", "authorUsername", "retweetCount"]
@@ -34,7 +54,7 @@ const posts = await mcp_xpoz.getTwitterPostsByKeywords({
 
 // Get baseline data (last 7 days for robust baseline)
 const baselinePosts = await mcp_xpoz.getTwitterPostsByKeywords({
-  query: "$NVDA OR #NVDA OR NVDA",
+  query: "$NVDA OR #NVDA OR NVDA OR NVIDIA", // MUST include company name!
   startDate: "YYYY-MM-DD", // 7 days ago
   endDate: "YYYY-MM-DD",
   fields: ["id", "createdAt"]
@@ -81,25 +101,14 @@ Use for peer comparison and context:
 ```jsx
 import React, { useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine, AreaChart, Area } from 'recharts';
-import { AlertTriangle, TrendingUp, Zap, Clock, Search, Bell } from 'lucide-react';
+import { AlertTriangle, TrendingUp, Zap, Clock, Bell } from 'lucide-react';
 
 export default function AccelerationAlerts() {
-  const [tickerInput, setTickerInput] = useState('NVDA');
-  const [ticker, setTicker] = useState('NVDA');
-  const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('alerts');
 
-  const handleSearch = () => {
-    if (tickerInput.trim()) {
-      setIsLoading(true);
-      setTicker(tickerInput.toUpperCase().trim());
-      setTimeout(() => setIsLoading(false), 500);
-    }
-  };
-
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter') handleSearch();
-  };
+  // CLAUDE: Replace with actual ticker and local hour
+  const ticker = 'TSLA'; // CLAUDE: Replace with actual ticker
+  const generatedAtHour = 12; // CLAUDE: Replace with user's local hour
 
   // === REPLACE WITH REAL DATA FROM XPOZ MCP ===
   const category = 'AI / Semiconductors';
@@ -200,30 +209,6 @@ export default function AccelerationAlerts() {
 
   return (
     <div className="w-full max-w-5xl mx-auto p-6 bg-slate-900 rounded-xl text-white">
-      {/* Ticker Search */}
-      <div className="mb-6">
-        <div className="flex gap-2">
-          <div className="relative flex-1 max-w-xs">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input
-              type="text"
-              value={tickerInput}
-              onChange={(e) => setTickerInput(e.target.value.toUpperCase())}
-              onKeyPress={handleKeyPress}
-              placeholder="Enter ticker (e.g., AAPL)"
-              className="w-full pl-10 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-orange-500"
-            />
-          </div>
-          <button
-            onClick={handleSearch}
-            disabled={isLoading}
-            className="px-4 py-2 bg-orange-600 hover:bg-orange-700 disabled:bg-orange-800 rounded-lg font-medium transition-colors"
-          >
-            {isLoading ? 'Loading...' : 'Monitor'}
-          </button>
-        </div>
-      </div>
-
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
@@ -236,9 +221,14 @@ export default function AccelerationAlerts() {
             <p className="text-slate-400 text-sm">Velocity spike detection vs hourly baseline</p>
           </div>
         </div>
-        <div className="flex items-center gap-2 px-3 py-1 bg-red-500/20 border border-red-500/30 rounded-full">
-          <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-          <span className="text-red-400 text-sm font-medium">{totalAlerts} Active ({highAlerts} High)</span>
+        <div>
+          <div className="flex items-center gap-2 px-3 py-1 bg-red-500/20 border border-red-500/30 rounded-full mb-2">
+            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+            <span className="text-red-400 text-sm font-medium">{totalAlerts} Active ({highAlerts} High)</span>
+          </div>
+          <div className="text-right">
+            <div className="text-sm text-slate-400">Generated at: {String(generatedAtHour).padStart(2, '0')}:00 local</div>
+          </div>
         </div>
       </div>
 
@@ -461,12 +451,27 @@ interface AccelerationData {
 ## IMPORTANT: Artifact Format
 
 When generating this artifact in Claude.ai, you MUST:
-1. Save the file with `.jsx` extension
-2. Use the exact format: `/mnt/user-data/outputs/acceleration-alerts.jsx`
-3. Replace ALL sample data with real data from XPOZ MCP before rendering
-4. **CRITICAL**: When ticker changes, recalculate ALL data for new ticker
+1. Create a **React artifact** (not text/markdown)
+2. Replace ALL sample data with real data from XPOZ MCP
+3. **NO SEARCH BOX** - Do not add any search input UI
+4. **LOCAL TIME** - Set `generatedAtHour` to user's current local hour (0-23)
+5. **EXPANDED QUERIES** - Use company names in all queries
 
 ## Instructions for Claude
+
+### ⚠️ CRITICAL REQUIREMENTS (MUST FOLLOW!)
+
+1. **DO NOT add a search box or any search UI** - Artifacts cannot trigger Claude actions.
+
+2. **USE EXPANDED QUERIES** - For EVERY ticker, include the company name:
+   - `$TSLA OR #TSLA OR TSLA OR Tesla` (not just `$TSLA`)
+   - Without expansion you'll get ~20 mentions instead of ~150+!
+
+3. **USE LOCAL TIME** - Set `generatedAtHour` to the user's current local hour (0-23), NOT UTC.
+
+4. **DOWNLOAD FULL CSV** - Use `dataDumpExportOperationId` to get ALL tweets, not just first 100.
+
+### Data Processing Steps
 
 1. When user asks about acceleration/spikes for any ticker:
    - Use XPOZ MCP `getTwitterPostsByKeywords` to fetch last 48h of mentions

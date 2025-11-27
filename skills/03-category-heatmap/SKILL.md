@@ -23,23 +23,50 @@ Activate this skill when the user asks about:
 
 **All data comes from XPOZ MCP with real-time Twitter data.**
 
+### ⚠️ CRITICAL: Query Expansion (MUST DO!)
+
+Before fetching Twitter data for ANY ticker, you MUST expand the query to include the company name. **Searching only for ticker symbols ($GOOG, #GOOG) will miss 80%+ of mentions!**
+
+**Step 0: For each ticker, use an expanded query:**
+
+| Ticker | Expanded Query |
+|--------|----------------|
+| NVDA | `$NVDA OR #NVDA OR NVDA OR NVIDIA` |
+| GOOGL | `$GOOG OR #GOOG OR GOOG OR $GOOGL OR #GOOGL OR GOOGL OR Google OR Alphabet` |
+| TSLA | `$TSLA OR #TSLA OR TSLA OR Tesla` |
+| AAPL | `$AAPL OR #AAPL OR AAPL OR Apple` |
+| MSFT | `$MSFT OR #MSFT OR MSFT OR Microsoft` |
+| META | `$META OR #META OR META OR Facebook OR "Meta Platforms"` |
+| AMZN | `$AMZN OR #AMZN OR AMZN OR Amazon` |
+| BTC | `$BTC OR #BTC OR BTC OR Bitcoin` |
+| ETH | `$ETH OR #ETH OR ETH OR Ethereum` |
+| SOL | `$SOL OR #SOL OR SOL OR Solana` |
+| GME | `$GME OR #GME OR GME OR GameStop` |
+| AMD | `$AMD OR #AMD OR AMD` |
+
+**For other tickers**, look up the company name via web search: `"{TICKER} stock company name"`
+
+**Without query expansion:**
+- GOOGL: ~20 mentions/day ❌
+- With expansion: ~150+ mentions/day ✅
+
 ### Data Flow for Claude:
 
-1. **For each category, fetch mentions for representative tickers:**
+1. **For each category, fetch mentions for representative tickers using EXPANDED QUERIES:**
 ```
-Use getTwitterPostsByKeywords for each ticker:
-- AI/ML: NVDA, MSFT, GOOGL, AMZN, META
-- EVs: TSLA, RIVN, LCID, NIO, XPEV
-- Crypto: BTC, ETH, SOL, XRP, DOGE
-- Big Tech: AAPL, GOOGL, MSFT, META, AMZN
-- Semiconductors: AMD, INTC, AVGO, QCOM, MU
-- Fintech: SQ, PYPL, AFRM, COIN, HOOD
-- Biotech: MRNA, PFE, LLY, ABBV, JNJ
-- Cloud/SaaS: CRM, SNOW, NET, DDOG, ZS
-- Gaming: EA, TTWO, RBLX, ATVI, NTDOY
-- Energy: XOM, CVX, COP, SLB, OXY
-- Retail: WMT, TGT, COST, HD, LOW
-- Meme Stocks: GME, AMC, BBBY, BB, NOK
+Use getTwitterPostsByKeywords for each ticker with EXPANDED query:
+- AI/ML: NVDA (NVIDIA), MSFT (Microsoft), GOOGL (Google), AMZN (Amazon), META (Facebook)
+- EVs: TSLA (Tesla), RIVN (Rivian), LCID (Lucid), NIO (NIO), XPEV (XPeng)
+- Crypto: BTC (Bitcoin), ETH (Ethereum), SOL (Solana), XRP (Ripple), DOGE (Dogecoin)
+- Big Tech: AAPL (Apple), GOOGL (Google), MSFT (Microsoft), META (Facebook), AMZN (Amazon)
+- Semiconductors: AMD, INTC (Intel), AVGO (Broadcom), QCOM (Qualcomm), MU (Micron)
+- Fintech: SQ (Square/Block), PYPL (PayPal), AFRM (Affirm), COIN (Coinbase), HOOD (Robinhood)
+- Biotech: MRNA (Moderna), PFE (Pfizer), LLY (Eli Lilly), ABBV (AbbVie), JNJ (Johnson & Johnson)
+- Cloud/SaaS: CRM (Salesforce), SNOW (Snowflake), NET (Cloudflare), DDOG (Datadog), ZS (Zscaler)
+- Gaming: EA, TTWO (Take-Two), RBLX (Roblox), ATVI (Activision), NTDOY (Nintendo)
+- Energy: XOM (Exxon), CVX (Chevron), COP (ConocoPhillips), SLB (Schlumberger), OXY (Occidental)
+- Retail: WMT (Walmart), TGT (Target), COST (Costco), HD (Home Depot), LOW (Lowe's)
+- Meme Stocks: GME (GameStop), AMC, BBBY, BB (BlackBerry), NOK (Nokia)
 ```
 
 2. **Calculate baseline for each category (3-day average per hour):**
@@ -78,8 +105,13 @@ export default function CategoryHeatmap() {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [sortBy, setSortBy] = useState('velocity'); // 'velocity' or 'change'
 
-  // SAMPLE DATA - Claude will replace with XPOZ MCP data
+  // CLAUDE: Set this to user's current local hour (0-23) - NOT UTC!
+  // Ask the user their timezone if unsure
+  const generatedAtHour = 12; // Replace with user's current local hour
+
+  // SAMPLE DATA - Claude MUST replace with XPOZ MCP data using EXPANDED QUERIES
   // Velocity is normalized: 5.0 = 1x baseline, 7.5 = 2x baseline, 10 = 3x+ baseline
+  // IMPORTANT: Use company names in queries (e.g., "NVDA OR NVIDIA", not just "NVDA")
   const categories = [
     {
       name: 'AI/ML',
@@ -274,21 +306,25 @@ export default function CategoryHeatmap() {
     { hour: 'Now', 'AI/ML': 8.7, 'EVs': 7.8, 'Crypto': 6.5, 'Semis': 8.4, 'Meme': 7.5 },
   ];
 
+  // Improved color palette - more visually distinct
   const getHeatColor = (velocity) => {
-    if (velocity >= 8) return 'bg-red-500';
-    if (velocity >= 7) return 'bg-orange-500';
-    if (velocity >= 6) return 'bg-yellow-500';
-    if (velocity >= 5) return 'bg-lime-500';
-    if (velocity >= 4) return 'bg-green-500';
-    return 'bg-blue-500';
+    if (velocity >= 8.5) return 'bg-rose-600';     // Very hot (2.5x+)
+    if (velocity >= 7.5) return 'bg-red-500';      // Hot (2x+)
+    if (velocity >= 6.5) return 'bg-orange-500';   // Elevated (1.5x+)
+    if (velocity >= 5.5) return 'bg-amber-500';    // Above normal (1.2x)
+    if (velocity >= 4.5) return 'bg-emerald-500';  // Normal (~1x)
+    if (velocity >= 3.5) return 'bg-cyan-500';     // Below normal
+    return 'bg-blue-600';                          // Cold (<0.6x)
   };
 
   const getHeatColorClass = (velocity) => {
-    if (velocity >= 8) return 'text-red-400';
-    if (velocity >= 7) return 'text-orange-400';
-    if (velocity >= 6) return 'text-yellow-400';
-    if (velocity >= 5) return 'text-lime-400';
-    return 'text-green-400';
+    if (velocity >= 8.5) return 'text-rose-400';
+    if (velocity >= 7.5) return 'text-red-400';
+    if (velocity >= 6.5) return 'text-orange-400';
+    if (velocity >= 5.5) return 'text-amber-400';
+    if (velocity >= 4.5) return 'text-emerald-400';
+    if (velocity >= 3.5) return 'text-cyan-400';
+    return 'text-blue-400';
   };
 
   const formatMultiple = (multiple) => {
@@ -329,7 +365,7 @@ export default function CategoryHeatmap() {
           </div>
         </div>
         <div className="text-right">
-          <div className="text-sm text-slate-400">Last updated: Just now</div>
+          <div className="text-sm text-slate-400">Generated at: {String(generatedAtHour).padStart(2, '0')}:00 local</div>
           <div className="text-xs text-slate-500">Baseline: 3-day hourly avg</div>
         </div>
       </div>
@@ -406,28 +442,32 @@ export default function CategoryHeatmap() {
             <h3 className="text-sm font-medium text-slate-400 mb-3">Heat Scale (vs Baseline)</h3>
             <div className="flex items-center justify-between text-xs">
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-blue-500 rounded" />
-                <span className="text-slate-400">&lt;0.8x (Below)</span>
+                <div className="w-4 h-4 bg-blue-600 rounded" />
+                <span className="text-slate-400">&lt;0.6x (Cold)</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-green-500 rounded" />
-                <span className="text-slate-400">0.8-1x (Normal)</span>
+                <div className="w-4 h-4 bg-cyan-500 rounded" />
+                <span className="text-slate-400">0.6-0.9x</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-lime-500 rounded" />
-                <span className="text-slate-400">1-1.3x</span>
+                <div className="w-4 h-4 bg-emerald-500 rounded" />
+                <span className="text-slate-400">0.9-1.2x (Normal)</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-yellow-500 rounded" />
-                <span className="text-slate-400">1.3-1.7x</span>
+                <div className="w-4 h-4 bg-amber-500 rounded" />
+                <span className="text-slate-400">1.2-1.5x</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 bg-orange-500 rounded" />
-                <span className="text-slate-400">1.7-2.2x</span>
+                <span className="text-slate-400">1.5-2x</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 bg-red-500 rounded" />
-                <span className="text-slate-400">2.2x+ (Hot)</span>
+                <span className="text-slate-400">2-2.5x (Hot)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 bg-rose-600 rounded" />
+                <span className="text-slate-400">2.5x+ (Very Hot)</span>
               </div>
             </div>
           </div>
@@ -673,17 +713,65 @@ export default function CategoryHeatmap() {
 ## IMPORTANT: Artifact Format
 
 When generating this artifact in Claude.ai, you MUST:
-1. Save the file with `.jsx` extension
-2. Use the exact format: `/mnt/user-data/outputs/category-heatmap.jsx`
-3. Replace ALL sample data with real data from XPOZ MCP before rendering
-4. **CRITICAL**: When category selection changes, recalculate ALL data for new selection
+1. Create a **React artifact** (not text/markdown)
+2. Replace ALL sample data with real data from XPOZ MCP
+3. **NO SEARCH BOX** - Do not add any ticker/category search input UI
+4. **LOCAL TIME** - Set `generatedAtHour` to user's current local hour (0-23)
+5. **EXPANDED QUERIES** - Use company names in all queries (NVDA OR NVIDIA, not just NVDA)
 
 ## Instructions for Claude
 
-1. **Fetch data via XPOZ MCP** for all representative tickers in each category
-2. **Calculate 3-day baseline** for each category (average mentions per hour of day)
-3. **Compute normalized velocity** (current / baseline) for each category
-4. **Aggregate category velocity** from individual ticker data
-5. **Render React artifact** with interactive heatmap
-6. **Enable drill-down** to show individual tickers in each category
-7. **Highlight acceleration** - categories gaining momentum in last hour
+### ⚠️ CRITICAL REQUIREMENTS (MUST FOLLOW!)
+
+1. **DO NOT add a search box or any search UI** - Artifacts cannot trigger Claude actions.
+
+2. **USE EXPANDED QUERIES** - For EVERY ticker, include the company name:
+   - `$NVDA OR #NVDA OR NVDA OR NVIDIA` (not just `$NVDA`)
+   - Without expansion you'll get ~20 mentions instead of ~150+!
+
+3. **USE LOCAL TIME** - Set `generatedAtHour` to the user's current local hour (0-23), NOT UTC. Ask the user their timezone if unsure.
+
+4. **DOWNLOAD FULL CSV** - For each ticker query, use `dataDumpExportOperationId` to get ALL tweets, not just first 100.
+
+### Data Collection Steps
+
+1. **For each category**, fetch data for all 5 tickers using EXPANDED queries
+
+2. **Fetch TODAY's data** for each ticker:
+   ```
+   getTwitterPostsByKeywords({ query: "EXPANDED_QUERY", startDate: TODAY, endDate: TODAY })
+   ```
+
+3. **Fetch BASELINE data** (last 3 days) using SAME expanded query:
+   ```
+   getTwitterPostsByKeywords({ query: "EXPANDED_QUERY", startDate: 3_DAYS_AGO, endDate: TODAY })
+   ```
+
+4. **Calculate hourly baselines** - For each hour (0-23): `baseline[hour] = totalPostsInThatHour / 3`
+
+5. **Calculate velocity** - For the current hour: `velocity = 2.5 + (actual/baseline * 2.5)`, clamped 0-10
+
+6. **Aggregate per category** - Sum all ticker mentions for category-level metrics
+
+### Replace These Values in Template
+
+| Variable | Value |
+|----------|-------|
+| `generatedAtHour` | User's current local hour (0-23) |
+| `categories` | Real data from XPOZ MCP for all 12 categories |
+| `timelineData` | Real 6-hour velocity history per category |
+
+### Data Sources per Category
+
+- AI/ML: NVDA, MSFT, GOOGL, AMZN, META
+- EVs: TSLA, RIVN, LCID, NIO, XPEV
+- Crypto: BTC, ETH, SOL, XRP, DOGE
+- Big Tech: AAPL, GOOGL, MSFT, META, AMZN
+- Semiconductors: NVDA, AMD, INTC, AVGO, QCOM
+- Fintech: SQ, PYPL, AFRM, COIN, HOOD
+- Biotech: MRNA, PFE, LLY, ABBV, JNJ
+- Cloud/SaaS: CRM, SNOW, NET, DDOG, ZS
+- Gaming: EA, TTWO, RBLX, ATVI, NTDOY
+- Energy: XOM, CVX, COP, SLB, OXY
+- Retail: WMT, TGT, COST, HD, LOW
+- Meme Stocks: GME, AMC, BBBY, BB, NOK

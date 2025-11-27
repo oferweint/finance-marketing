@@ -20,13 +20,29 @@ Activate this skill when the user asks about:
 
 ## XPOZ MCP Data Flow
 
+### ⚠️ CRITICAL: Query Expansion (MUST DO!)
+
+Before fetching Twitter data for ANY ticker, you MUST expand the query to include the company name. **Searching only for ticker symbols ($GOOG, #GOOG) will miss 80%+ of mentions!**
+
+**For each ticker, use an expanded query:**
+
+| Ticker | Expanded Query |
+|--------|----------------|
+| TSLA | `$TSLA OR #TSLA OR TSLA OR Tesla` |
+| NVDA | `$NVDA OR #NVDA OR NVDA OR NVIDIA` |
+| GOOGL | `$GOOG OR #GOOG OR GOOG OR $GOOGL OR #GOOGL OR GOOGL OR Google OR Alphabet` |
+| AAPL | `$AAPL OR #AAPL OR AAPL OR Apple` |
+| MSFT | `$MSFT OR #MSFT OR MSFT OR Microsoft` |
+
+**For other tickers**, look up the company name via web search: `"{TICKER} stock company name"`
+
 ### Step 1: Get Portfolio Holdings
 Accept user's portfolio as comma-separated tickers or named list.
 
 ### Step 2: Fetch Data for Each Holding
 ```
 For each ticker, use getTwitterPostsByKeywords:
-- query: "$TICKER" (e.g., "$NVDA", "$TSLA")
+- query: "$NVDA OR #NVDA OR NVDA OR NVIDIA" (EXPANDED query with company name!)
 - fields: ["text", "authorUsername", "createdAt", "retweetCount"]
 - Get 24h of data
 ```
@@ -70,13 +86,14 @@ Always render a **React artifact** with:
 ```jsx
 import React, { useState } from 'react';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import { Briefcase, AlertTriangle, TrendingUp, TrendingDown, Shield, Search, Activity, Layers, Target, Plus, X } from 'lucide-react';
+import { Briefcase, AlertTriangle, TrendingUp, TrendingDown, Shield, Activity, Layers, Target } from 'lucide-react';
 
 export default function PortfolioAggregator() {
   const [activeTab, setActiveTab] = useState('overview');
-  const [portfolioInput, setPortfolioInput] = useState('');
 
-  const portfolioName = 'Tech Growth Portfolio';
+  // CLAUDE: Set these to the values you're analyzing
+  const portfolioName = 'Tech Growth Portfolio'; // CLAUDE: Replace with actual portfolio name
+  const generatedAtHour = 12; // CLAUDE: Replace with user's local hour (0-23)
 
   const holdings = [
     { ticker: 'NVDA', weight: 25, sentiment: 0.82, velocity: 8.5, velocityBaseline: 1.8, change: 1.2, status: 'healthy', category: 'AI/Semiconductors' },
@@ -148,36 +165,13 @@ export default function PortfolioAggregator() {
 
   return (
     <div className="w-full max-w-4xl mx-auto p-6 bg-slate-900 rounded-xl text-white">
-      {/* Portfolio Input */}
-      <div className="mb-6">
-        <div className="relative">
-          <Plus className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
-          <input
-            type="text"
-            value={portfolioInput}
-            onChange={(e) => setPortfolioInput(e.target.value.toUpperCase())}
-            placeholder="Add tickers: NVDA, TSLA, AAPL (comma-separated)"
-            className="w-full pl-10 pr-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
-          />
-        </div>
-        <div className="flex flex-wrap gap-2 mt-3">
-          {holdings.map(h => (
-            <span key={h.ticker} className="flex items-center gap-1 px-2 py-1 bg-slate-800 rounded text-sm">
-              {h.ticker}
-              <span className="text-slate-500">{h.weight}%</span>
-              <X className="w-3 h-3 text-slate-500 cursor-pointer hover:text-red-400" />
-            </span>
-          ))}
-        </div>
-      </div>
-
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <Briefcase className="w-8 h-8 text-emerald-400" />
           <div>
             <h1 className="text-2xl font-bold">{portfolioName}</h1>
-            <p className="text-slate-400 text-sm">{holdings.length} holdings • Social metrics aggregation</p>
+            <p className="text-slate-400 text-sm">{holdings.length} holdings • Social metrics aggregation • Generated at {generatedAtHour}:00</p>
           </div>
         </div>
         <div className="text-right">
@@ -550,17 +544,34 @@ When generating this artifact in Claude.ai, you MUST:
 1. Save the file with `.jsx` extension
 2. Use the exact format: `/mnt/user-data/outputs/portfolio-aggregator.jsx`
 3. Replace ALL sample data with real data from XPOZ MCP before rendering
-4. **CRITICAL**: When portfolio holdings change, recalculate ALL data for new portfolio
+4. **NO SEARCH BOX** - Do not add any portfolio input UI
+5. **LOCAL TIME** - Set `generatedAtHour` to user's current hour (0-23)
+6. **EXPANDED QUERIES** - Include company name in all queries for each holding
+7. **CRITICAL**: When portfolio holdings change, recalculate ALL data for new portfolio
 
 ## Instructions for Claude
 
+### ⚠️ CRITICAL REQUIREMENTS (MUST FOLLOW!)
+
+1. **DO NOT add a search box or any input UI** - The template has no search functionality. Artifacts cannot trigger Claude actions.
+
+2. **USE EXPANDED QUERIES** - Before fetching data for each holding, expand ticker to include company name:
+   - TSLA → `$TSLA OR #TSLA OR TSLA OR Tesla`
+   - NVDA → `$NVDA OR #NVDA OR NVDA OR NVIDIA`
+   - Without expansion: ~20 mentions. With expansion: ~150+ mentions!
+
+3. **USE LOCAL TIME** - Set `generatedAtHour` to the user's current local hour (0-23), NOT UTC. Ask the user their timezone if unsure.
+
+### Data Collection Steps
+
 1. Accept portfolio from user (comma-separated tickers or list)
-2. Use XPOZ MCP to fetch sentiment and velocity for each holding
-3. Calculate baseline-normalized velocity (actual / 3-day average)
-4. Classify each holding status (healthy/watch/flag)
-5. Map tickers to categories and calculate category aggregates
-6. Compare holdings to category peers
-7. Calculate portfolio health score
-8. Render React artifact with all 3 tabs populated
-9. Flag problematic holdings with explanations
-10. Suggest Sentiment Deep Dive on flagged holdings
+2. **Expand queries** for ALL holdings to include company names
+3. Use XPOZ MCP to fetch sentiment and velocity for each holding with expanded queries
+4. Calculate baseline-normalized velocity (actual / 3-day average)
+5. Classify each holding status (healthy/watch/flag)
+6. Map tickers to categories and calculate category aggregates
+7. Compare holdings to category peers
+8. Calculate portfolio health score
+9. Render React artifact with all 3 tabs populated
+10. Flag problematic holdings with explanations
+11. Suggest Sentiment Deep Dive on flagged holdings

@@ -20,13 +20,29 @@ Activate this skill when the user asks about:
 
 ## XPOZ MCP Data Flow
 
+### ⚠️ CRITICAL: Query Expansion (MUST DO!)
+
+Before fetching Twitter data for ANY ticker, you MUST expand the query to include the company name. **Searching only for ticker symbols ($GOOG, #GOOG) will miss 80%+ of mentions!**
+
+**For each ticker, use an expanded query:**
+
+| Ticker | Expanded Query |
+|--------|----------------|
+| TSLA | `$TSLA OR #TSLA OR TSLA OR Tesla` |
+| NVDA | `$NVDA OR #NVDA OR NVDA OR NVIDIA` |
+| GOOGL | `$GOOG OR #GOOG OR GOOG OR $GOOGL OR #GOOGL OR GOOGL OR Google OR Alphabet` |
+| AAPL | `$AAPL OR #AAPL OR AAPL OR Apple` |
+| MSFT | `$MSFT OR #MSFT OR MSFT OR Microsoft` |
+
+**For other tickers**, look up the company name via web search: `"{TICKER} stock company name"`
+
 ### Step 1: Get Asset List
 Accept user's tickers or use default category peers.
 
 ### Step 2: Fetch Sentiment Time Series
 ```
 For each ticker, use getTwitterPostsByKeywords:
-- query: "$TICKER"
+- query: "$TSLA OR #TSLA OR TSLA OR Tesla" (EXPANDED query with company name!)
 - fields: ["text", "createdAt", "authorUsername"]
 - Get 7 days of hourly data for correlation analysis
 ```
@@ -67,14 +83,15 @@ Always render a **React artifact** with:
 ```jsx
 import React, { useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import { GitBranch, Link, Unlink, ArrowRight, Search, Grid, AlertTriangle, Layers } from 'lucide-react';
+import { GitBranch, Link, Unlink, ArrowRight, Grid, AlertTriangle, Layers } from 'lucide-react';
 
 export default function CorrelationRadar() {
   const [activeTab, setActiveTab] = useState('matrix');
-  const [tickerInput, setTickerInput] = useState('');
 
-  const assets = ['NVDA', 'AMD', 'INTC', 'TSLA', 'AAPL', 'MSFT'];
-  const category = 'Mixed Tech';
+  // CLAUDE: Set these to the values you're analyzing
+  const assets = ['NVDA', 'AMD', 'INTC', 'TSLA', 'AAPL', 'MSFT']; // CLAUDE: Replace with actual assets
+  const category = 'Mixed Tech'; // CLAUDE: Replace with actual category
+  const generatedAtHour = 12; // CLAUDE: Replace with user's local hour (0-23)
 
   // Correlation matrix (symmetric)
   const correlationMatrix = [
@@ -147,32 +164,13 @@ export default function CorrelationRadar() {
 
   return (
     <div className="w-full max-w-4xl mx-auto p-6 bg-slate-900 rounded-xl text-white">
-      {/* Ticker Input */}
-      <div className="mb-6">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
-          <input
-            type="text"
-            value={tickerInput}
-            onChange={(e) => setTickerInput(e.target.value.toUpperCase())}
-            placeholder="Enter tickers: NVDA, AMD, TSLA (comma-separated)"
-            className="w-full pl-10 pr-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-violet-500"
-          />
-        </div>
-        <div className="flex flex-wrap gap-2 mt-3">
-          {assets.map(a => (
-            <span key={a} className="px-2 py-1 bg-slate-800 rounded text-sm">{a}</span>
-          ))}
-        </div>
-      </div>
-
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <GitBranch className="w-8 h-8 text-violet-400" />
           <div>
             <h1 className="text-2xl font-bold">Correlation Radar</h1>
-            <p className="text-slate-400 text-sm">Cross-asset sentiment analysis • 7-day window</p>
+            <p className="text-slate-400 text-sm">Cross-asset sentiment analysis • 7-day window • Generated at {generatedAtHour}:00</p>
           </div>
         </div>
         <div className="text-right">
@@ -508,17 +506,34 @@ When generating this artifact in Claude.ai, you MUST:
 1. Save the file with `.jsx` extension
 2. Use the exact format: `/mnt/user-data/outputs/correlation-radar.jsx`
 3. Replace ALL sample data with real data from XPOZ MCP before rendering
-4. **CRITICAL**: When ticker list changes, recalculate ALL correlations for new assets
+4. **NO SEARCH BOX** - Do not add any ticker input UI
+5. **LOCAL TIME** - Set `generatedAtHour` to user's current hour (0-23)
+6. **EXPANDED QUERIES** - Include company name in all queries for each asset
+7. **CRITICAL**: When ticker list changes, recalculate ALL correlations for new assets
 
 ## Instructions for Claude
 
+### ⚠️ CRITICAL REQUIREMENTS (MUST FOLLOW!)
+
+1. **DO NOT add a search box or any input UI** - The template has no search functionality. Artifacts cannot trigger Claude actions.
+
+2. **USE EXPANDED QUERIES** - Before fetching data for each asset, expand ticker to include company name:
+   - TSLA → `$TSLA OR #TSLA OR TSLA OR Tesla`
+   - NVDA → `$NVDA OR #NVDA OR NVDA OR NVIDIA`
+   - Without expansion: ~20 mentions. With expansion: ~150+ mentions!
+
+3. **USE LOCAL TIME** - Set `generatedAtHour` to the user's current local hour (0-23), NOT UTC. Ask the user their timezone if unsure.
+
+### Data Collection Steps
+
 1. Accept ticker list from user or use category defaults
-2. Use XPOZ MCP to fetch 7 days of sentiment data per ticker
-3. Calculate hourly sentiment scores for each asset
-4. Compute Pearson correlation between all pairs
-5. Identify clusters (assets with r > 0.7)
-6. Detect divergences (current vs 30-day expected correlation)
-7. Map assets to categories for cross-category analysis
-8. Render React artifact with all 3 tabs populated
-9. Suggest pair trades on divergences
-10. Recommend Sentiment Deep Dive for outlier assets
+2. **Expand queries** for ALL assets to include company names
+3. Use XPOZ MCP to fetch 7 days of sentiment data per ticker with expanded queries
+4. Calculate hourly sentiment scores for each asset
+5. Compute Pearson correlation between all pairs
+6. Identify clusters (assets with r > 0.7)
+7. Detect divergences (current vs 30-day expected correlation)
+8. Map assets to categories for cross-category analysis
+9. Render React artifact with all 3 tabs populated
+10. Suggest pair trades on divergences
+11. Recommend Sentiment Deep Dive for outlier assets

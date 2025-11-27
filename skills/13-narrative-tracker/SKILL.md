@@ -20,10 +20,26 @@ Activate this skill when the user asks about:
 
 ## XPOZ MCP Data Flow
 
+### ⚠️ CRITICAL: Query Expansion (MUST DO!)
+
+Before fetching Twitter data for ANY ticker, you MUST expand the query to include the company name. **Searching only for ticker symbols ($GOOG, #GOOG) will miss 80%+ of mentions!**
+
+**For each ticker, use an expanded query:**
+
+| Ticker | Expanded Query |
+|--------|----------------|
+| TSLA | `$TSLA OR #TSLA OR TSLA OR Tesla` |
+| NVDA | `$NVDA OR #NVDA OR NVDA OR NVIDIA` |
+| GOOGL | `$GOOG OR #GOOG OR GOOG OR $GOOGL OR #GOOGL OR GOOGL OR Google OR Alphabet` |
+| AAPL | `$AAPL OR #AAPL OR AAPL OR Apple` |
+| MSFT | `$MSFT OR #MSFT OR MSFT OR Microsoft` |
+
+**For other tickers**, look up the company name via web search: `"{TICKER} stock company name"`
+
 ### Step 1: Gather Narrative Data
 Use `getTwitterPostsByKeywords` to fetch recent posts:
 ```
-Query: "$NVDA" or "NVIDIA stock"
+Query: "$NVDA OR #NVDA OR NVDA OR NVIDIA"
 Fields: ["id", "text", "authorUsername", "createdAtDate", "retweetCount"]
 ```
 
@@ -61,10 +77,11 @@ Always render a **React artifact** with:
 ```jsx
 import React, { useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import { BookOpen, TrendingUp, TrendingDown, MessageCircle, Hash, Search, Layers, Target } from 'lucide-react';
+import { BookOpen, TrendingUp, TrendingDown, MessageCircle, Hash, Layers, Target } from 'lucide-react';
 
 export default function NarrativeTracker() {
-  const [ticker, setTicker] = useState('NVDA');
+  const ticker = 'NVDA'; // CLAUDE: Replace with actual ticker
+  const generatedAtHour = 12; // CLAUDE: Replace with user's local hour (0-23)
   const [activeTab, setActiveTab] = useState('overview');
 
   // SAMPLE DATA - Replace with XPOZ MCP data
@@ -171,20 +188,6 @@ export default function NarrativeTracker() {
 
   return (
     <div className="w-full max-w-4xl mx-auto p-6 bg-slate-900 rounded-xl text-white">
-      {/* Ticker Input */}
-      <div className="mb-6">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
-          <input
-            type="text"
-            value={ticker}
-            onChange={(e) => setTicker(e.target.value.toUpperCase())}
-            placeholder="Enter ticker (e.g., NVDA, TSLA, BTC)"
-            className="w-full pl-10 pr-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
-          />
-        </div>
-      </div>
-
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
@@ -194,8 +197,13 @@ export default function NarrativeTracker() {
             <p className="text-slate-400 text-sm">Competing story analysis</p>
           </div>
         </div>
-        <div className="text-sm text-slate-400">
-          {narratives.length} active narratives
+        <div className="text-right">
+          <div className="text-sm text-slate-400">
+            {narratives.length} active narratives
+          </div>
+          <div className="text-xs text-slate-500">
+            Generated at {generatedAtHour}:00 local time
+          </div>
         </div>
       </div>
 
@@ -562,15 +570,20 @@ When generating this artifact in Claude.ai, you MUST:
 1. Save the file with `.jsx` extension
 2. Use the exact format: `/mnt/user-data/outputs/narrative-tracker.jsx`
 3. Replace ALL sample data with real data from XPOZ MCP before rendering
-4. **CRITICAL**: When ticker changes, recalculate ALL data for new ticker
+4. **NO SEARCH BOX** - Use hardcoded ticker constant with comment for Claude to replace
+5. **LOCAL TIME** - Add `generatedAtHour` constant with user's local hour (0-23)
+6. **EXPANDED QUERIES** - Always use expanded queries with company names (e.g., `$NVDA OR #NVDA OR NVDA OR NVIDIA`)
 
 ## Instructions for Claude
 
 1. Accept ticker input from user
-2. Fetch narrative data via XPOZ MCP `getTwitterPostsByKeywords`
-3. Extract narrative themes using NLP clustering
-4. Calculate strength as share of total mentions
-5. Compare to baseline (7-day average)
-6. Compare to category peers
-7. Render React artifact with 3 tabs
-8. Suggest Sentiment Shift if narrative changes detected
+2. **CRITICAL**: Expand query to include company name (e.g., `$NVDA OR #NVDA OR NVDA OR NVIDIA`)
+3. Fetch narrative data via XPOZ MCP `getTwitterPostsByKeywords` with expanded query
+4. Extract narrative themes using NLP clustering
+5. Calculate strength as share of total mentions
+6. Compare to baseline (7-day average)
+7. Compare to category peers
+8. Render React artifact with 3 tabs
+9. **NO SEARCH INPUT** - Use hardcoded ticker constant with comment
+10. **LOCAL TIME** - Include user's local hour in generatedAtHour constant
+11. Suggest Sentiment Shift if narrative changes detected

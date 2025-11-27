@@ -20,10 +20,26 @@ Activate this skill when the user asks about:
 
 ## XPOZ MCP Data Flow
 
+### ⚠️ CRITICAL: Query Expansion (MUST DO!)
+
+Before fetching Twitter data for ANY ticker, you MUST expand the query to include the company name. **Searching only for ticker symbols ($GOOG, #GOOG) will miss 80%+ of mentions!**
+
+**For each ticker, use an expanded query:**
+
+| Ticker | Expanded Query |
+|--------|----------------|
+| TSLA | `$TSLA OR #TSLA OR TSLA OR Tesla` |
+| NVDA | `$NVDA OR #NVDA OR NVDA OR NVIDIA` |
+| GOOGL | `$GOOG OR #GOOG OR GOOG OR $GOOGL OR #GOOGL OR GOOGL OR Google OR Alphabet` |
+| AAPL | `$AAPL OR #AAPL OR AAPL OR Apple` |
+| MSFT | `$MSFT OR #MSFT OR MSFT OR Microsoft` |
+
+**For other tickers**, look up the company name via web search: `"{TICKER} stock company name"`
+
 ### Step 1: Gather Retail Sentiment
 Use `getTwitterPostsByKeywords` to fetch retail social posts:
 ```
-Query: "$SPY" or "SPY stock"
+Query: "$SPY OR #SPY OR SPY" (ETFs typically don't need company name expansion)
 Fields: ["id", "text", "authorUsername", "createdAtDate", "retweetCount"]
 ```
 
@@ -62,10 +78,11 @@ Always render a **React artifact** with:
 
 ```jsx
 import React, { useState } from 'react';
-import { GitCompare, Users, Building2, AlertTriangle, TrendingUp, TrendingDown, History, Search, Layers, Target } from 'lucide-react';
+import { GitCompare, Users, Building2, AlertTriangle, TrendingUp, TrendingDown, History, Layers, Target } from 'lucide-react';
 
 export default function DivergenceDetector() {
-  const [ticker, setTicker] = useState('SPY');
+  const ticker = 'SPY'; // CLAUDE: Replace with actual ticker
+  const generatedAtHour = 12; // CLAUDE: Replace with user's local hour (0-23)
   const [activeTab, setActiveTab] = useState('overview');
 
   // SAMPLE DATA - Replace with XPOZ MCP data
@@ -126,20 +143,6 @@ export default function DivergenceDetector() {
 
   return (
     <div className="w-full max-w-4xl mx-auto p-6 bg-slate-900 rounded-xl text-white">
-      {/* Ticker Input */}
-      <div className="mb-6">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
-          <input
-            type="text"
-            value={ticker}
-            onChange={(e) => setTicker(e.target.value.toUpperCase())}
-            placeholder="Enter ticker (e.g., SPY, QQQ, TSLA)"
-            className="w-full pl-10 pr-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-pink-500"
-          />
-        </div>
-      </div>
-
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
@@ -149,9 +152,14 @@ export default function DivergenceDetector() {
             <p className="text-slate-400 text-sm">Retail vs Smart Money</p>
           </div>
         </div>
-        <div className={`flex items-center gap-2 px-3 py-1 rounded-full ${divergenceLevel.color}`}>
-          <AlertTriangle className="w-4 h-4" />
-          <span className="text-sm font-medium">{divergenceLevel.label} Divergence</span>
+        <div className="flex flex-col items-end gap-2">
+          <div className={`flex items-center gap-2 px-3 py-1 rounded-full ${divergenceLevel.color}`}>
+            <AlertTriangle className="w-4 h-4" />
+            <span className="text-sm font-medium">{divergenceLevel.label} Divergence</span>
+          </div>
+          <div className="text-xs text-slate-500">
+            Generated at {generatedAtHour}:00 local time
+          </div>
         </div>
       </div>
 
@@ -552,16 +560,21 @@ When generating this artifact in Claude.ai, you MUST:
 1. Save the file with `.jsx` extension
 2. Use the exact format: `/mnt/user-data/outputs/divergence-detector.jsx`
 3. Replace ALL sample data with real data from XPOZ MCP before rendering
-4. **CRITICAL**: When ticker changes, recalculate ALL data for new ticker
+4. **NO SEARCH BOX** - Use hardcoded ticker constant with comment for Claude to replace
+5. **LOCAL TIME** - Add `generatedAtHour` constant with user's local hour (0-23)
+6. **EXPANDED QUERIES** - Always use expanded queries with company names (e.g., `$NVDA OR #NVDA OR NVDA OR NVIDIA`)
 
 ## Instructions for Claude
 
 1. Accept ticker input from user
-2. Fetch retail sentiment via XPOZ MCP `getTwitterPostsByKeywords`
-3. Identify smart money accounts via `getTwitterUserByUsername`
-4. Calculate sentiment for both cohorts
-5. Compute divergence score and compare to baseline
-6. Analyze historical outcomes
-7. Compare to category peers
-8. Render React artifact with 3 tabs
-9. Provide contrarian recommendation based on historical accuracy
+2. **CRITICAL**: Expand query to include company name (e.g., `$NVDA OR #NVDA OR NVDA OR NVIDIA`)
+3. Fetch retail sentiment via XPOZ MCP `getTwitterPostsByKeywords` with expanded query
+4. Identify smart money accounts via `getTwitterUserByUsername`
+5. Calculate sentiment for both cohorts
+6. Compute divergence score and compare to baseline
+7. Analyze historical outcomes
+8. Compare to category peers
+9. Render React artifact with 3 tabs
+10. **NO SEARCH INPUT** - Use hardcoded ticker constant with comment
+11. **LOCAL TIME** - Include user's local hour in generatedAtHour constant
+12. Provide contrarian recommendation based on historical accuracy

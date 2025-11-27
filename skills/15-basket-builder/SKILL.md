@@ -20,6 +20,22 @@ Activate this skill when the user asks about:
 
 ## XPOZ MCP Data Flow
 
+### ⚠️ CRITICAL: Query Expansion (MUST DO!)
+
+Before fetching Twitter data for ANY ticker, you MUST expand the query to include the company name. **Searching only for ticker symbols ($GOOG, #GOOG) will miss 80%+ of mentions!**
+
+**For each ticker, use an expanded query:**
+
+| Ticker | Expanded Query |
+|--------|----------------|
+| TSLA | `$TSLA OR #TSLA OR TSLA OR Tesla` |
+| NVDA | `$NVDA OR #NVDA OR NVDA OR NVIDIA` |
+| GOOGL | `$GOOG OR #GOOG OR GOOG OR $GOOGL OR #GOOGL OR GOOGL OR Google OR Alphabet` |
+| AAPL | `$AAPL OR #AAPL OR AAPL OR Apple` |
+| MSFT | `$MSFT OR #MSFT OR MSFT OR Microsoft` |
+
+**For other tickers**, look up the company name via web search: `"{TICKER} stock company name"`
+
 ### Step 1: Identify Theme Assets
 Use `getTwitterPostsByKeywords` to find relevant tickers:
 ```
@@ -28,8 +44,13 @@ Fields: ["id", "text", "authorUsername", "createdAtDate", "retweetCount"]
 ```
 
 ### Step 2: Analyze Each Asset
-For each identified ticker, gather:
-- Sentiment score via keyword search
+For each identified ticker, gather sentiment using expanded queries:
+```
+Query for NVDA: "$NVDA OR #NVDA OR NVDA OR NVIDIA"
+Query for AMD: "$AMD OR #AMD OR AMD OR 'Advanced Micro Devices'"
+Query for MSFT: "$MSFT OR #MSFT OR MSFT OR Microsoft"
+```
+- Sentiment score via expanded keyword search
 - Mention velocity vs baseline
 - Influencer coverage via `getTwitterUserByUsername`
 
@@ -66,16 +87,20 @@ When generating this artifact in Claude.ai, you MUST:
 1. Save the file with `.jsx` extension
 2. Use the exact format: `/mnt/user-data/outputs/basket-builder.jsx`
 3. Replace ALL sample data with real data from XPOZ MCP before rendering
+4. **NO SEARCH BOX** - Use hardcoded theme constant with comment for Claude to replace
+5. **LOCAL TIME** - Add `generatedAtHour` constant with user's local hour (0-23)
+6. **EXPANDED QUERIES** - Always use expanded queries with company names for each ticker (e.g., `$NVDA OR #NVDA OR NVDA OR NVIDIA`)
 
 ## React Artifact Template
 
 ```jsx
 import React, { useState } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts';
-import { Package, TrendingUp, AlertTriangle, Check, BarChart3, Search, Layers, Target } from 'lucide-react';
+import { Package, TrendingUp, AlertTriangle, Check, BarChart3, Layers, Target } from 'lucide-react';
 
 export default function BasketBuilder() {
-  const [theme, setTheme] = useState('AI Infrastructure');
+  const theme = 'AI Infrastructure'; // CLAUDE: Replace with actual theme
+  const generatedAtHour = 12; // CLAUDE: Replace with user's local hour (0-23)
   const [activeTab, setActiveTab] = useState('overview');
 
   // SAMPLE DATA - Replace with XPOZ MCP data for the selected theme
@@ -136,33 +161,6 @@ export default function BasketBuilder() {
 
   return (
     <div className="w-full max-w-4xl mx-auto p-6 bg-slate-900 rounded-xl text-white">
-      {/* Theme Input */}
-      <div className="mb-6">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
-          <input
-            type="text"
-            value={theme}
-            onChange={(e) => setTheme(e.target.value)}
-            placeholder="Enter theme (e.g., AI Infrastructure, Electric Vehicles)"
-            className="w-full pl-10 pr-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-teal-500"
-          />
-        </div>
-        <div className="flex flex-wrap gap-2 mt-2">
-          {['AI Infrastructure', 'Electric Vehicles', 'Cybersecurity', 'Cloud Computing'].map((t) => (
-            <button
-              key={t}
-              onClick={() => setTheme(t)}
-              className={`px-3 py-1 text-xs rounded-full transition-colors ${
-                theme === t ? 'bg-teal-500/20 text-teal-400' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
-              }`}
-            >
-              {t}
-            </button>
-          ))}
-        </div>
-      </div>
-
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
@@ -172,8 +170,13 @@ export default function BasketBuilder() {
             <p className="text-slate-400 text-sm">Sentiment-weighted portfolio</p>
           </div>
         </div>
-        <div className={`text-sm ${getRiskColor(basketMetrics.riskLevel)}`}>
-          Risk: {basketMetrics.riskLevel}
+        <div className="text-right">
+          <div className={`text-sm ${getRiskColor(basketMetrics.riskLevel)}`}>
+            Risk: {basketMetrics.riskLevel}
+          </div>
+          <div className="text-xs text-slate-500">
+            Generated at {generatedAtHour}:00 local time
+          </div>
         </div>
       </div>
 
@@ -535,12 +538,15 @@ interface BasketData {
 
 1. Accept theme input from user
 2. Identify relevant tickers via XPOZ MCP `getTwitterPostsByKeywords`
-3. For each ticker, calculate:
+3. **CRITICAL**: For each ticker, expand query to include company name (e.g., `$NVDA OR #NVDA OR NVDA OR NVIDIA`)
+4. Fetch data using expanded queries for each ticker in the basket
+5. For each ticker, calculate:
    - Sentiment score vs 7-day baseline
    - Theme relevance via narrative matching
    - Correlation with other basket holdings
-4. Apply weighting methodology to calculate allocations
-5. Identify risks and alternative themes
-6. Render React artifact with 3 tabs
-7. **CRITICAL**: When theme changes, recalculate ALL data for new theme
-8. Save artifact as `.jsx` file in `/mnt/user-data/outputs/` for Claude.ai
+6. Apply weighting methodology to calculate allocations
+7. Identify risks and alternative themes
+8. Render React artifact with 3 tabs
+9. **NO SEARCH INPUT** - Use hardcoded theme constant with comment
+10. **LOCAL TIME** - Include user's local hour in generatedAtHour constant
+11. Save artifact as `.jsx` file in `/mnt/user-data/outputs/` for Claude.ai

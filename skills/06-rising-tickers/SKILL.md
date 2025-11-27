@@ -23,12 +23,33 @@ Activate this skill when the user asks about:
 
 **All data comes from XPOZ MCP with real-time Twitter data.**
 
+### ⚠️ CRITICAL: Query Expansion (MUST DO!)
+
+Before fetching Twitter data for ANY ticker, you MUST expand the query to include the company name. **Searching only for ticker symbols ($GOOG, #GOOG) will miss 80%+ of mentions!**
+
+**For each ticker, use an expanded query:**
+
+| Ticker | Expanded Query |
+|--------|----------------|
+| TSLA | `$TSLA OR #TSLA OR TSLA OR Tesla` |
+| NVDA | `$NVDA OR #NVDA OR NVDA OR NVIDIA` |
+| GOOGL | `$GOOG OR #GOOG OR GOOG OR $GOOGL OR #GOOGL OR GOOGL OR Google OR Alphabet` |
+| AAPL | `$AAPL OR #AAPL OR AAPL OR Apple` |
+| MSFT | `$MSFT OR #MSFT OR MSFT OR Microsoft` |
+
+**For other tickers**, look up the company name via web search: `"{TICKER} stock company name"`
+
+**Without query expansion:**
+- GOOGL: ~20 mentions/day ❌
+- With expansion: ~150+ mentions/day ✅
+
 ### Data Flow for Claude:
 
 1. **Scan categories for accelerating tickers:**
 ```
 For each category (AI, EVs, Crypto, etc.):
   Use getTwitterPostsByKeywords for representative tickers
+  MUST include company names: "$TICKER OR #TICKER OR TICKER OR CompanyName"
   Compare current hour mentions vs 3-day hourly baseline
   Flag tickers where velocity > 2x baseline
 ```
@@ -73,11 +94,14 @@ Always render a **React artifact** with:
 
 ```jsx
 import React, { useState } from 'react';
-import { Rocket, TrendingUp, Flame, Clock, Star, Zap, Search, Filter, BarChart2 } from 'lucide-react';
+import { Rocket, TrendingUp, Flame, Clock, Star, Zap, Filter, BarChart2 } from 'lucide-react';
 
 export default function RisingTickers() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [activeTab, setActiveTab] = useState('rising');
+
+  // CLAUDE: Replace with user's local hour
+  const generatedAtHour = 12; // CLAUDE: Replace with user's local hour
 
   const categories = ['all', 'AI/ML', 'EVs', 'Crypto', 'Semiconductors', 'Biotech', 'Meme Stocks', 'Fintech'];
 
@@ -214,9 +238,14 @@ export default function RisingTickers() {
             <p className="text-slate-400 text-sm">Early momentum discovery</p>
           </div>
         </div>
-        <div className="flex items-center gap-2 text-sm text-slate-400">
-          <Zap className="w-4 h-4 text-yellow-400" />
-          {risingAssets.length} signals detected
+        <div>
+          <div className="flex items-center gap-2 text-sm text-slate-400 mb-2">
+            <Zap className="w-4 h-4 text-yellow-400" />
+            {risingAssets.length} signals detected
+          </div>
+          <div className="text-right">
+            <div className="text-sm text-slate-400">Generated at: {String(generatedAtHour).padStart(2, '0')}:00 local</div>
+          </div>
         </div>
       </div>
 
@@ -454,12 +483,27 @@ export default function RisingTickers() {
 ## IMPORTANT: Artifact Format
 
 When generating this artifact in Claude.ai, you MUST:
-1. Save the file with `.jsx` extension
-2. Use the exact format: `/mnt/user-data/outputs/rising-tickers.jsx`
-3. Replace ALL sample data with real data from XPOZ MCP before rendering
-4. **CRITICAL**: When category filter changes, recalculate ALL data for new selection
+1. Create a **React artifact** (not text/markdown)
+2. Replace ALL sample data with real data from XPOZ MCP
+3. **NO SEARCH BOX** - Do not add any search input UI
+4. **LOCAL TIME** - Set `generatedAtHour` to user's current local hour (0-23)
+5. **EXPANDED QUERIES** - Use company names in all queries
 
 ## Instructions for Claude
+
+### ⚠️ CRITICAL REQUIREMENTS (MUST FOLLOW!)
+
+1. **DO NOT add a search box or any search UI** - Artifacts cannot trigger Claude actions.
+
+2. **USE EXPANDED QUERIES** - For EVERY ticker, include the company name:
+   - `$TSLA OR #TSLA OR TSLA OR Tesla` (not just `$TSLA`)
+   - Without expansion you'll get ~20 mentions instead of ~150+!
+
+3. **USE LOCAL TIME** - Set `generatedAtHour` to the user's current local hour (0-23), NOT UTC.
+
+4. **DOWNLOAD FULL CSV** - Use `dataDumpExportOperationId` to get ALL tweets, not just first 100.
+
+### Data Processing Steps
 
 1. **Scan categories** via XPOZ MCP for accelerating tickers
 2. **Compare to baselines** (3-day hourly average per ticker)

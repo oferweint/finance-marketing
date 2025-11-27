@@ -21,50 +21,50 @@ Activate this skill when the user asks about:
 
 ## Data Flow
 
+### ⚠️ CRITICAL: Query Expansion (MUST DO FIRST!)
+
+Before fetching Twitter data for ANY ticker, you MUST expand the query to include the company name. **Searching only for ticker symbols ($GOOG, #GOOG) will miss 80%+ of mentions!**
+
+**Step 0: Look up the company name dynamically**
+- Search: `"{TICKER} stock company name"`
+- Build an expanded query with BOTH ticker variants AND company name
+
+**Query Expansion Examples:**
+| Ticker | Expanded Query |
+|--------|----------------|
+| GOOG/GOOGL | `$GOOG OR #GOOG OR GOOG OR $GOOGL OR #GOOGL OR GOOGL OR Google OR Alphabet` |
+| NVDA | `$NVDA OR #NVDA OR NVDA OR NVIDIA` |
+| TSLA | `$TSLA OR #TSLA OR TSLA OR Tesla` |
+| AAPL | `$AAPL OR #AAPL OR AAPL OR Apple` |
+| MSFT | `$MSFT OR #MSFT OR MSFT OR Microsoft` |
+| META | `$META OR #META OR META OR Facebook OR "Meta Platforms"` |
+| AMZN | `$AMZN OR #AMZN OR AMZN OR Amazon` |
+
+**Without query expansion:**
+- GOOG: ~10-20 mentions/day ❌
+- With expansion: ~150+ mentions/day ✅
+
 ### Step 1: Fetch Real Data from XPOZ MCP
 
-Use these MCP tools to get real Twitter data. **IMPORTANT: Search for BOTH the ticker symbol AND company name** for comprehensive coverage:
+Use these MCP tools to get real Twitter data. **ALWAYS use the expanded query from Step 0!**
 
 ```javascript
-// Get posts for the ticker (last 24 hours)
-// CRITICAL: Include both symbol AND company name (case-insensitive)
+// Get posts for the ticker (last 24 hours) - USE EXPANDED QUERY!
 const posts = await mcp_xpoz.getTwitterPostsByKeywords({
-  query: "$TSLA OR #TSLA OR TSLA OR Tesla",  // Symbol + company name
+  query: "$TSLA OR #TSLA OR TSLA OR Tesla", // EXPANDED query, not just $TSLA
   startDate: "YYYY-MM-DD", // 24 hours ago
   endDate: "YYYY-MM-DD",   // today
   fields: ["id", "text", "createdAt", "authorUsername"]
 });
 
-// Get baseline data (last 3 days for hourly averages)
+// Get baseline data (last 3 days for hourly averages) - SAME EXPANDED QUERY!
 const baselinePosts = await mcp_xpoz.getTwitterPostsByKeywords({
-  query: "$TSLA OR #TSLA OR TSLA OR Tesla",  // Same query for consistency
+  query: "$TSLA OR #TSLA OR TSLA OR Tesla", // MUST match today's query exactly!
   startDate: "YYYY-MM-DD", // 3 days ago
   endDate: "YYYY-MM-DD",   // today
   fields: ["id", "createdAt"]
 });
 ```
-
-### Common Ticker → Company Name Mapping
-
-**CRITICAL: Always search for BOTH ticker symbol AND company name!**
-
-| Ticker | Query to use |
-|--------|-------------|
-| NVDA | `"$NVDA OR #NVDA OR NVDA OR NVIDIA OR Nvidia"` |
-| INTC | `"$INTC OR #INTC OR INTC OR Intel"` |
-| TSLA | `"$TSLA OR #TSLA OR TSLA OR Tesla"` |
-| AAPL | `"$AAPL OR #AAPL OR AAPL OR Apple"` |
-| GOOGL | `"$GOOGL OR #GOOGL OR GOOGL OR Google OR Alphabet"` |
-| MSFT | `"$MSFT OR #MSFT OR MSFT OR Microsoft"` |
-| AMZN | `"$AMZN OR #AMZN OR AMZN OR Amazon"` |
-| META | `"$META OR #META OR META OR Facebook"` |
-| AMD | `"$AMD OR #AMD OR AMD"` |
-| COIN | `"$COIN OR #COIN OR COIN OR Coinbase"` |
-| GME | `"$GME OR #GME OR GME OR GameStop"` |
-| BTC | `"$BTC OR #BTC OR BTC OR Bitcoin"` |
-| ETH | `"$ETH OR #ETH OR ETH OR Ethereum"` |
-
-For other tickers, include: `$TICKER OR #TICKER OR TICKER OR CompanyName`
 
 ### Step 2: Calculate Hourly Baseline (CRITICAL)
 
@@ -139,9 +139,12 @@ import { Activity, TrendingUp, TrendingDown, Minus, Users } from 'lucide-react';
 export default function VelocityTracker() {
   const [activeTab, setActiveTab] = useState('detail');
 
-  // CLAUDE: Set these values when generating the artifact
-  const ticker = 'TSLA'; // CLAUDE: Replace with actual ticker
-  const generatedAtHour = 16; // CLAUDE: Replace with user's current hour (0-23)
+  // CLAUDE: Set this to the ticker you're analyzing
+  const ticker = 'TSLA'; // Replace with actual ticker
+
+  // Current hour (0-23) in USER'S LOCAL TIMEZONE - used to filter out future hours
+  // CLAUDE: Set this to the user's current local hour (ask if unsure)
+  const generatedAtHour = 12; // Replace with user's current local hour (0-23)
 
   // === REPLACE WITH REAL DATA FROM XPOZ MCP ===
   // Category is determined by ticker (use mapping from skill instructions)
@@ -176,7 +179,7 @@ export default function VelocityTracker() {
     { time: '23:00', hour: 23, actual: 75, baseline: 50, velocity: 6.3 },
   ];
 
-  // Filter to only show hours up to the time when artifact was generated
+  // CRITICAL: Filter to only show hours up to the generated time (no future hours!)
   const hourlyData = allHourlyData.filter(d => d.hour <= generatedAtHour);
 
   // Current stats - ALWAYS derive from the most recent hour's data
@@ -328,14 +331,14 @@ export default function VelocityTracker() {
               <div className="text-slate-500 text-xs">{baselineRatio >= 1 ? 'above' : 'below'} hourly norm</div>
             </div>
             <div className="bg-slate-800 rounded-lg p-4">
-              <div className="text-slate-400 text-sm mb-1">Peak Rate</div>
-              <div className="text-xl font-bold">{Math.max(...hourlyData.map(d => d.actual))}</div>
+              <div className="text-slate-400 text-sm mb-1">Latest Rate ({latestHourData?.time})</div>
+              <div className="text-xl font-bold">{currentActual}</div>
               <div className="text-slate-500 text-xs">mentions/hr</div>
             </div>
             <div className="bg-slate-800 rounded-lg p-4">
-              <div className="text-slate-400 text-sm mb-1">Avg for {latestHourData?.time}</div>
-              <div className="text-xl font-bold text-slate-300">{currentBaseline}</div>
-              <div className="text-slate-500 text-xs">baseline mentions/hr</div>
+              <div className="text-slate-400 text-sm mb-1">24h Total</div>
+              <div className="text-xl font-bold text-slate-300">{hourlyData.reduce((sum, d) => sum + d.actual, 0)}</div>
+              <div className="text-slate-500 text-xs">total mentions</div>
             </div>
           </div>
         </>
@@ -454,39 +457,61 @@ interface VelocityData {
 ## IMPORTANT: Artifact Format
 
 When generating this artifact in Claude.ai, you MUST:
-1. Save the file with `.jsx` extension
-2. Use the exact format: `/mnt/user-data/outputs/velocity-tracker.jsx`
-3. Replace ALL sample data with real data from XPOZ MCP before rendering
-4. **CRITICAL**: When ticker changes, generate a NEW artifact with fresh data
+1. Create a React artifact (not text/markdown)
+2. Replace ALL sample data with real data from XPOZ MCP
+3. **NO SEARCH BOX** - Do not add any search input UI
+4. **LOCAL TIME** - Set `generatedAtHour` to user's current hour
+5. **EXPANDED QUERY** - Include company name in all queries
 
 ## Instructions for Claude
 
-1. **Initial Generation** - When user asks about velocity for any ticker:
-   - Use XPOZ MCP `getTwitterPostsByKeywords` to fetch TODAY's mentions (startDate = today)
-   - Use XPOZ MCP to fetch last 3 days for baseline calculation (startDate = 3 days ago, endDate = today)
-   - **BASELINE CALCULATION (CRITICAL)**:
-     - Group baseline posts by hour-of-day (0-23)
-     - For each hour, calculate: `baseline[hour] = totalPostsInThatHour / 3`
-     - This gives expected mentions per hour based on historical average
-   - Calculate normalized velocity for each hour: `velocity = 2.5 + (actual/baseline * 2.5)`
-   - **ONLY include hours up to user's current LOCAL time** (no future hours!)
-   - Identify category and fetch peer data
-   - Render the React artifact with real data
+### ⚠️ CRITICAL REQUIREMENTS (MUST FOLLOW!)
 
-2. **Replace ALL sample data** in the component with actual XPOZ data:
-   - `ticker` = the ticker symbol (e.g., 'INTC')
-   - `generatedAtHour` = user's current hour (0-23) in their LOCAL timezone
-   - `category` = detected category from mapping
-   - `allHourlyData` = real hourly data array with `{ time, hour, actual, baseline, velocity }`
-   - `categoryPeers` = real peer data for comparison tab
-   - `comparisonData` is auto-generated from hourlyData (already filtered)
+1. **DO NOT add a search box or any search UI** - The template has no search functionality. Artifacts cannot trigger Claude actions.
 
-3. **CRITICAL DATA CONSISTENCY**:
-   - **SET `generatedAtHour`** to user's local hour (ask if unsure, or use context clues)
-   - The header velocity score is auto-calculated from `latestHourData.velocity`
-   - Do NOT set `currentVelocity`, `currentActual`, `currentBaseline` manually - they derive from `latestHourData`
-   - Graph stops at `generatedAtHour` (handled by filter on `allHourlyData`)
+2. **USE EXPANDED QUERIES** - Before fetching data, expand the ticker to include company name:
+   - GOOG → `$GOOG OR #GOOG OR GOOG OR $GOOGL OR #GOOGL OR GOOGL OR Google OR Alphabet`
+   - Without expansion: ~20 mentions. With expansion: ~150+ mentions!
 
-4. **TICKER CHANGE**: When user asks for a different ticker, generate a completely NEW artifact with fresh data
+3. **USE LOCAL TIME** - Set `generatedAtHour` to the user's current local hour (0-23), NOT UTC. Ask the user their timezone if unsure.
 
-5. The artifact is interactive - user can switch between Detail and Comparison tabs
+### Data Collection Steps
+
+1. **Expand the query** (see examples in "Query Expansion" section above)
+
+2. **Fetch TODAY's data** using expanded query:
+   ```
+   getTwitterPostsByKeywords({ query: "EXPANDED_QUERY", startDate: TODAY, endDate: TODAY })
+   ```
+
+3. **Fetch BASELINE data** (last 3 days) using SAME expanded query:
+   ```
+   getTwitterPostsByKeywords({ query: "EXPANDED_QUERY", startDate: 3_DAYS_AGO, endDate: TODAY })
+   ```
+
+4. **Download full CSV** - Use `dataDumpExportOperationId` to get ALL tweets, not just first 100
+
+5. **Calculate hourly baselines** - For each hour (0-23): `baseline[hour] = totalPostsInThatHour / 3`
+
+6. **Calculate velocity** - For each hour: `velocity = 2.5 + (actual/baseline * 2.5)`, clamped 0-10
+
+### Replace These Values in Template
+
+| Variable | Value |
+|----------|-------|
+| `ticker` | The ticker being analyzed (e.g., 'GOOGL') |
+| `generatedAtHour` | User's current local hour (0-23) |
+| `category` | Detected from category mapping |
+| `allHourlyData` | Real hourly data array |
+| `categoryPeers` | Real peer data for all 5 peers |
+
+### Data Consistency Rules
+
+- Header velocity = `latestHourData.velocity` (auto-calculated)
+- `currentVelocity`, `currentActual`, `currentBaseline` all derive from `latestHourData` - do NOT set manually
+- Graph stops at `generatedAtHour` (via filter)
+- "above/below" text is now dynamic based on `baselineRatio`
+
+### For Different Tickers
+
+Generate a completely NEW artifact with fresh data. Each artifact is standalone.

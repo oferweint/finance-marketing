@@ -18,12 +18,28 @@ Activate this skill when the user asks about:
 - "Are [CRYPTO] mentions authentic?"
 - "Filter noise on [TICKER]"
 
-## XPOZ MCP Data Flow
+## Data Source: XPOZ MCP
+
+### ⚠️ CRITICAL: Query Expansion (MUST DO!)
+
+Before fetching Twitter data for ANY ticker, you MUST expand the query to include the company name. **Searching only for ticker symbols ($GOOG, #GOOG) will miss 80%+ of mentions!**
+
+**For each ticker, use an expanded query:**
+
+| Ticker | Expanded Query |
+|--------|----------------|
+| TSLA | `$TSLA OR #TSLA OR TSLA OR Tesla` |
+| NVDA | `$NVDA OR #NVDA OR NVDA OR NVIDIA` |
+| GOOGL | `$GOOG OR #GOOG OR GOOG OR $GOOGL OR #GOOGL OR GOOGL OR Google OR Alphabet` |
+| AAPL | `$AAPL OR #AAPL OR AAPL OR Apple` |
+| MSFT | `$MSFT OR #MSFT OR MSFT OR Microsoft` |
+
+**For other tickers**, look up the company name via web search: `"{TICKER} stock company name"`
 
 ### Step 1: Get Mentions Data
 ```
-Use getTwitterPostsByKeywords:
-- query: "$TICKER" or ticker name
+Use getTwitterPostsByKeywords with EXPANDED query:
+- query: "$TICKER OR #TICKER OR TICKER OR CompanyName" (see expansion table above)
 - fields: ["text", "authorUsername", "createdAt", "retweetCount"]
 ```
 
@@ -69,11 +85,16 @@ Always render a **React artifact** with:
 ```jsx
 import React, { useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { Shield, Bot, CheckCircle, AlertTriangle, Users, MessageSquare, Search, Activity, Layers } from 'lucide-react';
+import { Shield, Bot, CheckCircle, AlertTriangle, Users, MessageSquare, Activity, Layers } from 'lucide-react';
 
 export default function QualityIndex() {
-  const [ticker, setTicker] = useState('DOGE');
   const [activeTab, setActiveTab] = useState('overview');
+
+  // CLAUDE: Replace with actual ticker
+  const ticker = 'DOGE';
+
+  // CLAUDE: Replace with user's local hour (0-23)
+  const generatedAtHour = 12;
 
   const qualityMetrics = {
     overallScore: 6.2,
@@ -155,27 +176,13 @@ export default function QualityIndex() {
 
   return (
     <div className="w-full max-w-4xl mx-auto p-6 bg-slate-900 rounded-xl text-white">
-      {/* Ticker Input */}
-      <div className="mb-6">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
-          <input
-            type="text"
-            value={ticker}
-            onChange={(e) => setTicker(e.target.value.toUpperCase())}
-            placeholder="Enter ticker (e.g., DOGE, GME, BTC)"
-            className="w-full pl-10 pr-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
-          />
-        </div>
-      </div>
-
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <Shield className="w-8 h-8 text-blue-400" />
           <div>
             <h1 className="text-2xl font-bold">{ticker} Quality Index</h1>
-            <p className="text-slate-400 text-sm">Mention authenticity analysis • {qualityMetrics.sampleSize.toLocaleString()} tweets • {qualityMetrics.timeRange}</p>
+            <p className="text-slate-400 text-sm">Mention authenticity analysis • {qualityMetrics.sampleSize.toLocaleString()} tweets • {qualityMetrics.timeRange} • Generated at {generatedAtHour}:00</p>
           </div>
         </div>
         <div className="text-right">
@@ -573,17 +580,30 @@ When generating this artifact in Claude.ai, you MUST:
 1. Save the file with `.jsx` extension
 2. Use the exact format: `/mnt/user-data/outputs/quality-index.jsx`
 3. Replace ALL sample data with real data from XPOZ MCP before rendering
-4. **CRITICAL**: When ticker changes, recalculate ALL data for new ticker
+4. **NO SEARCH BOX** - Do not add any search input UI
+5. **LOCAL TIME** - Set `generatedAtHour` to user's current hour
+6. **EXPANDED QUERIES** - Include company name in all queries
 
 ## Instructions for Claude
 
-1. Accept ticker input from user
-2. Use XPOZ MCP to fetch mentions and author details
-3. Analyze account characteristics (age, followers, patterns)
-4. Classify accounts (verified/organic/suspicious/bot)
-5. Calculate quality indicators against baselines
-6. Map ticker to category and fetch peer quality scores
-7. Identify red/green flags
-8. Render React artifact with all 3 tabs populated
-9. Provide quality assessment with recommendation
-10. Suggest Volume Anomaly check if quality is low
+### ⚠️ CRITICAL REQUIREMENTS (MUST FOLLOW!)
+
+1. **DO NOT add a search box or any search UI** - The template has no search functionality. Artifacts cannot trigger Claude actions.
+
+2. **USE EXPANDED QUERIES** - Before fetching data, expand the ticker to include company name (see query expansion table above).
+
+3. **USE LOCAL TIME** - Set `generatedAtHour` to the user's current local hour (0-23), NOT UTC. Ask the user their timezone if unsure.
+
+### Data Collection Steps
+
+1. Expand the query to include company name (see table above)
+2. Use XPOZ MCP to fetch mentions with expanded query
+3. Fetch author details for each unique author
+4. Analyze account characteristics (age, followers, patterns)
+5. Classify accounts (verified/organic/suspicious/bot)
+6. Calculate quality indicators against baselines
+7. Map ticker to category and fetch peer quality scores
+8. Identify red/green flags
+9. Render React artifact with all 3 tabs populated
+10. Provide quality assessment with recommendation
+11. Suggest Volume Anomaly check if quality is low

@@ -22,12 +22,32 @@ Activate this skill when the user asks about:
 
 **All data comes from XPOZ MCP with real-time Twitter data.**
 
+### ⚠️ CRITICAL: Query Expansion (MUST DO!)
+
+Before fetching Twitter data for ANY ticker, you MUST expand the query to include the company name. **Searching only for ticker symbols ($GOOG, #GOOG) will miss 80%+ of mentions!**
+
+**For each ticker, use an expanded query:**
+
+| Ticker | Expanded Query |
+|--------|----------------|
+| TSLA | `$TSLA OR #TSLA OR TSLA OR Tesla` |
+| NVDA | `$NVDA OR #NVDA OR NVDA OR NVIDIA` |
+| GOOGL | `$GOOG OR #GOOG OR GOOG OR $GOOGL OR #GOOGL OR GOOGL OR Google OR Alphabet` |
+| AAPL | `$AAPL OR #AAPL OR AAPL OR Apple` |
+| MSFT | `$MSFT OR #MSFT OR MSFT OR Microsoft` |
+
+**For other tickers**, look up the company name via web search: `"{TICKER} stock company name"`
+
+**Without query expansion:**
+- GOOGL: ~20 mentions/day ❌
+- With expansion: ~150+ mentions/day ✅
+
 ### Data Flow for Claude:
 
 1. **Fetch recent posts mentioning the ticker:**
 ```
 Use getTwitterPostsByKeywords with:
-- query: "$TICKER" or "TICKER"
+- query: "$TICKER OR #TICKER OR TICKER OR CompanyName" (MUST include all variations!)
 - Look for position-indicating keywords
 ```
 
@@ -70,25 +90,14 @@ Always render a **React artifact** with:
 
 ```jsx
 import React, { useState } from 'react';
-import { Target, TrendingUp, TrendingDown, ArrowRight, AlertCircle, Search, Clock, BarChart2, Users } from 'lucide-react';
+import { Target, TrendingUp, TrendingDown, ArrowRight, AlertCircle, Clock, BarChart2, Users } from 'lucide-react';
 
 export default function PositionTracker() {
-  const [tickerInput, setTickerInput] = useState('NVDA');
-  const [ticker, setTicker] = useState('NVDA');
-  const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('current');
 
-  const handleSearch = () => {
-    if (tickerInput.trim()) {
-      setIsLoading(true);
-      setTicker(tickerInput.toUpperCase().trim());
-      setTimeout(() => setIsLoading(false), 500);
-    }
-  };
-
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter') handleSearch();
-  };
+  // CLAUDE: Replace with actual ticker and local hour
+  const ticker = 'TSLA'; // CLAUDE: Replace with actual ticker
+  const generatedAtHour = 12; // CLAUDE: Replace with user's local hour
 
   // SAMPLE DATA - Claude will replace with XPOZ MCP data
   const positions = [
@@ -224,40 +233,20 @@ export default function PositionTracker() {
         <div className="flex items-center gap-3">
           <Target className="w-8 h-8 text-purple-400" />
           <div>
-            <h1 className="text-2xl font-bold">Position Tracker</h1>
+            <h1 className="text-2xl font-bold">Position Tracker - ${ticker}</h1>
             <p className="text-slate-400 text-sm">Influencer stance monitoring</p>
           </div>
         </div>
-        {flippedPositions.length > 0 && (
-          <div className="flex items-center gap-2 px-3 py-1 bg-yellow-500/20 border border-yellow-500/30 rounded-full">
-            <AlertCircle className="w-4 h-4 text-yellow-400" />
-            <span className="text-yellow-400 text-sm">{flippedPositions.length} position flip(s)</span>
+        <div>
+          {flippedPositions.length > 0 && (
+            <div className="flex items-center gap-2 px-3 py-1 bg-yellow-500/20 border border-yellow-500/30 rounded-full mb-2">
+              <AlertCircle className="w-4 h-4 text-yellow-400" />
+              <span className="text-yellow-400 text-sm">{flippedPositions.length} position flip(s)</span>
+            </div>
+          )}
+          <div className="text-right">
+            <div className="text-sm text-slate-400">Generated at: {String(generatedAtHour).padStart(2, '0')}:00 local</div>
           </div>
-        )}
-      </div>
-
-      {/* Ticker Input */}
-      <div className="flex items-center gap-3 mb-6">
-        <div className="relative flex-1 max-w-xs">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <input
-            type="text"
-            value={tickerInput}
-            onChange={(e) => setTickerInput(e.target.value.toUpperCase())}
-            onKeyPress={handleKeyPress}
-            placeholder="Enter ticker (e.g., AAPL)"
-            className="w-full pl-10 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-purple-500"
-          />
-        </div>
-        <button
-          onClick={handleSearch}
-          disabled={isLoading}
-          className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium transition-colors disabled:opacity-50"
-        >
-          {isLoading ? 'Loading...' : 'Track'}
-        </button>
-        <div className="text-slate-400 text-sm">
-          Tracking: <span className="text-purple-400 font-bold">${ticker}</span>
         </div>
       </div>
 
@@ -535,12 +524,27 @@ Claude analyzes tweet content to determine position:
 ## IMPORTANT: Artifact Format
 
 When generating this artifact in Claude.ai, you MUST:
-1. Save the file with `.jsx` extension
-2. Use the exact format: `/mnt/user-data/outputs/position-tracker.jsx`
-3. Replace ALL sample data with real data from XPOZ MCP before rendering
-4. **CRITICAL**: When ticker changes, recalculate ALL data for new ticker
+1. Create a **React artifact** (not text/markdown)
+2. Replace ALL sample data with real data from XPOZ MCP
+3. **NO SEARCH BOX** - Do not add any search input UI
+4. **LOCAL TIME** - Set `generatedAtHour` to user's current local hour (0-23)
+5. **EXPANDED QUERIES** - Use company names in all queries
 
 ## Instructions for Claude
+
+### ⚠️ CRITICAL REQUIREMENTS (MUST FOLLOW!)
+
+1. **DO NOT add a search box or any search UI** - Artifacts cannot trigger Claude actions.
+
+2. **USE EXPANDED QUERIES** - For EVERY ticker, include the company name:
+   - `$TSLA OR #TSLA OR TSLA OR Tesla` (not just `$TSLA`)
+   - Without expansion you'll get ~20 mentions instead of ~150+!
+
+3. **USE LOCAL TIME** - Set `generatedAtHour` to the user's current local hour (0-23), NOT UTC.
+
+4. **DOWNLOAD FULL CSV** - Use `dataDumpExportOperationId` to get ALL tweets, not just first 100.
+
+### Data Processing Steps
 
 1. **Accept ticker input** from user (any stock or crypto)
 2. **Fetch posts via XPOZ MCP** `getTwitterPostsByKeywords` for the ticker

@@ -18,12 +18,28 @@ Activate this skill when the user asks about:
 - "Suspicious patterns on [CRYPTO]?"
 - "Volume anomaly check for [TICKER]"
 
-## XPOZ MCP Data Flow
+## Data Source: XPOZ MCP
+
+### ⚠️ CRITICAL: Query Expansion (MUST DO!)
+
+Before fetching Twitter data for ANY ticker, you MUST expand the query to include the company name. **Searching only for ticker symbols ($GOOG, #GOOG) will miss 80%+ of mentions!**
+
+**For each ticker, use an expanded query:**
+
+| Ticker | Expanded Query |
+|--------|----------------|
+| TSLA | `$TSLA OR #TSLA OR TSLA OR Tesla` |
+| NVDA | `$NVDA OR #NVDA OR NVDA OR NVIDIA` |
+| GOOGL | `$GOOG OR #GOOG OR GOOG OR $GOOGL OR #GOOGL OR GOOGL OR Google OR Alphabet` |
+| AAPL | `$AAPL OR #AAPL OR AAPL OR Apple` |
+| MSFT | `$MSFT OR #MSFT OR MSFT OR Microsoft` |
+
+**For other tickers**, look up the company name via web search: `"{TICKER} stock company name"`
 
 ### Step 1: Gather Volume Data
-Use `getTwitterPostsByKeywords` to fetch recent posts:
+Use `getTwitterPostsByKeywords` to fetch recent posts with EXPANDED query:
 ```
-Query: "$GME" or "GameStop stock"
+Query: "$GME OR #GME OR GME OR GameStop" (see expansion table above)
 Fields: ["id", "text", "authorUsername", "createdAtDate", "retweetCount"]
 ```
 
@@ -61,11 +77,16 @@ Always render a **React artifact** with:
 ```jsx
 import React, { useState } from 'react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine, BarChart, Bar } from 'recharts';
-import { Activity, AlertOctagon, Search, Zap, Clock, Layers, Users, Shield } from 'lucide-react';
+import { Activity, AlertOctagon, Zap, Clock, Layers, Users, Shield } from 'lucide-react';
 
 export default function VolumeAnomaly() {
-  const [ticker, setTicker] = useState('GME');
   const [activeTab, setActiveTab] = useState('overview');
+
+  // CLAUDE: Replace with actual ticker
+  const ticker = 'GME';
+
+  // CLAUDE: Replace with user's local hour (0-23)
+  const generatedAtHour = 12;
 
   // SAMPLE DATA - Replace with XPOZ MCP data
   const volumeData = [
@@ -143,27 +164,13 @@ export default function VolumeAnomaly() {
 
   return (
     <div className="w-full max-w-4xl mx-auto p-6 bg-slate-900 rounded-xl text-white">
-      {/* Ticker Input */}
-      <div className="mb-6">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
-          <input
-            type="text"
-            value={ticker}
-            onChange={(e) => setTicker(e.target.value.toUpperCase())}
-            placeholder="Enter ticker (e.g., GME, TSLA, BTC)"
-            className="w-full pl-10 pr-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-red-500"
-          />
-        </div>
-      </div>
-
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <Activity className="w-8 h-8 text-red-400" />
           <div>
             <h1 className="text-2xl font-bold">{ticker} Volume Anomaly</h1>
-            <p className="text-slate-400 text-sm">Unusual pattern detection (24h)</p>
+            <p className="text-slate-400 text-sm">Unusual pattern detection (24h) • Generated at {generatedAtHour}:00</p>
           </div>
         </div>
         {anomalies.length > 0 && (
@@ -591,12 +598,24 @@ When generating this artifact in Claude.ai, you MUST:
 1. Save the file with `.jsx` extension
 2. Use the exact format: `/mnt/user-data/outputs/volume-anomaly.jsx`
 3. Replace ALL sample data with real data from XPOZ MCP before rendering
-4. **CRITICAL**: When ticker changes, recalculate ALL data for new ticker
+4. **NO SEARCH BOX** - Do not add any search input UI
+5. **LOCAL TIME** - Set `generatedAtHour` to user's current hour
+6. **EXPANDED QUERIES** - Include company name in all queries
 
 ## Instructions for Claude
 
-1. Accept ticker input from user
-2. Fetch volume data via XPOZ MCP `getTwitterPostsByKeywords`
+### ⚠️ CRITICAL REQUIREMENTS (MUST FOLLOW!)
+
+1. **DO NOT add a search box or any search UI** - The template has no search functionality. Artifacts cannot trigger Claude actions.
+
+2. **USE EXPANDED QUERIES** - Before fetching data, expand the ticker to include company name (see query expansion table above).
+
+3. **USE LOCAL TIME** - Set `generatedAtHour` to the user's current local hour (0-23), NOT UTC. Ask the user their timezone if unsure.
+
+### Data Collection Steps
+
+1. Expand the query to include company name (see table above)
+2. Fetch volume data via XPOZ MCP `getTwitterPostsByKeywords` with expanded query
 3. Calculate baseline (3-day average volume per hour of day)
 4. Compute Z-scores for each hour
 5. Analyze account age distribution during anomaly windows

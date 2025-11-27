@@ -20,10 +20,26 @@ Activate this skill when the user asks about:
 
 ## XPOZ MCP Data Flow
 
+### ⚠️ CRITICAL: Query Expansion (MUST DO!)
+
+Before fetching Twitter data for ANY ticker, you MUST expand the query to include the company name. **Searching only for ticker symbols ($GOOG, #GOOG) will miss 80%+ of mentions!**
+
+**For each ticker, use an expanded query:**
+
+| Ticker | Expanded Query |
+|--------|----------------|
+| TSLA | `$TSLA OR #TSLA OR TSLA OR Tesla` |
+| NVDA | `$NVDA OR #NVDA OR NVDA OR NVIDIA` |
+| GOOGL | `$GOOG OR #GOOG OR GOOG OR $GOOGL OR #GOOGL OR GOOGL OR Google OR Alphabet` |
+| AAPL | `$AAPL OR #AAPL OR AAPL OR Apple` |
+| MSFT | `$MSFT OR #MSFT OR MSFT OR Microsoft` |
+
+**For other tickers**, look up the company name via web search: `"{TICKER} stock company name"`
+
 ### Step 1: Get Real-Time Twitter Data
 ```
 Use getTwitterPostsByKeywords with:
-- query: "$TSLA" or "Tesla stock"
+- query: "$TSLA OR #TSLA OR TSLA OR Tesla" (EXPANDED query with company name!)
 - Include cashtags and common variations
 - fields: ["text", "authorUsername", "createdAt", "retweetCount"]
 ```
@@ -69,11 +85,14 @@ Always render a **React artifact** with:
 ```jsx
 import React, { useState } from 'react';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, Radar } from 'recharts';
-import { TrendingUp, TrendingDown, BarChart3, Search, Activity, GitCompare, Target } from 'lucide-react';
+import { TrendingUp, TrendingDown, BarChart3, Activity, GitCompare, Target } from 'lucide-react';
 
 export default function SentimentDeepDive() {
-  const [ticker, setTicker] = useState('TSLA');
   const [activeTab, setActiveTab] = useState('overview');
+
+  // CLAUDE: Set these to the values you're analyzing
+  const ticker = 'TSLA'; // CLAUDE: Replace with actual ticker
+  const generatedAtHour = 12; // CLAUDE: Replace with user's local hour (0-23)
 
   // Sample data - populated from XPOZ MCP analysis
   const overall = {
@@ -163,27 +182,13 @@ export default function SentimentDeepDive() {
 
   return (
     <div className="w-full max-w-4xl mx-auto p-6 bg-slate-900 rounded-xl text-white">
-      {/* Ticker Input */}
-      <div className="mb-6">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
-          <input
-            type="text"
-            value={ticker}
-            onChange={(e) => setTicker(e.target.value.toUpperCase())}
-            placeholder="Enter ticker (e.g., TSLA, NVDA, BTC)"
-            className="w-full pl-10 pr-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
-          />
-        </div>
-      </div>
-
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <BarChart3 className="w-8 h-8 text-blue-400" />
           <div>
             <h1 className="text-2xl font-bold">{ticker} Sentiment</h1>
-            <p className="text-slate-400 text-sm">Multi-dimensional analysis • {overall.sampleSize.toLocaleString()} tweets • {overall.timeRange}</p>
+            <p className="text-slate-400 text-sm">Multi-dimensional analysis • {overall.sampleSize.toLocaleString()} tweets • {overall.timeRange} • Generated at {generatedAtHour}:00</p>
           </div>
         </div>
         <div className="text-right">
@@ -559,16 +564,33 @@ When generating this artifact in Claude.ai, you MUST:
 1. Save the file with `.jsx` extension
 2. Use the exact format: `/mnt/user-data/outputs/sentiment-deep-dive.jsx`
 3. Replace ALL sample data with real data from XPOZ MCP before rendering
-4. **CRITICAL**: When ticker changes, recalculate ALL data for new ticker
+4. **NO SEARCH BOX** - Do not add any search input UI
+5. **LOCAL TIME** - Set `generatedAtHour` to user's current hour (0-23)
+6. **EXPANDED QUERIES** - Include company name in all queries
+7. **CRITICAL**: When ticker changes, recalculate ALL data for new ticker
 
 ## Instructions for Claude
 
+### ⚠️ CRITICAL REQUIREMENTS (MUST FOLLOW!)
+
+1. **DO NOT add a search box or any search UI** - The template has no search functionality. Artifacts cannot trigger Claude actions.
+
+2. **USE EXPANDED QUERIES** - Before fetching data, expand the ticker to include company name:
+   - TSLA → `$TSLA OR #TSLA OR TSLA OR Tesla`
+   - NVDA → `$NVDA OR #NVDA OR NVDA OR NVIDIA`
+   - Without expansion: ~20 mentions. With expansion: ~150+ mentions!
+
+3. **USE LOCAL TIME** - Set `generatedAtHour` to the user's current local hour (0-23), NOT UTC. Ask the user their timezone if unsure.
+
+### Data Collection Steps
+
 1. Accept any ticker input from user
-2. Use XPOZ MCP to fetch real-time Twitter data
-3. Classify sentiment for each tweet (bullish/bearish/neutral)
-4. Categorize tweets by dimension (fundamental/technical/news/speculative)
-5. Calculate scores and compare to 3-day baseline
-6. Map ticker to category and fetch peer sentiment
-7. Render the React artifact with all 3 tabs populated
-8. Provide actionable interpretation
-9. Suggest related analyses (Velocity Tracker, Narrative Tracker, Sentiment Shift)
+2. **Expand the query** to include company name (see Query Expansion section)
+3. Use XPOZ MCP to fetch real-time Twitter data with expanded query
+4. Classify sentiment for each tweet (bullish/bearish/neutral)
+5. Categorize tweets by dimension (fundamental/technical/news/speculative)
+6. Calculate scores and compare to 3-day baseline
+7. Map ticker to category and fetch peer sentiment
+8. Render the React artifact with all 3 tabs populated
+9. Provide actionable interpretation
+10. Suggest related analyses (Velocity Tracker, Narrative Tracker, Sentiment Shift)
