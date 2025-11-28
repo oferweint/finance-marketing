@@ -1,5 +1,6 @@
 ---
 name: sentiment-deep-dive
+version: 2025-11-28
 description: Multi-dimensional sentiment analysis for financial assets. Creates interactive visualizations with pie charts, dimension bars, and sentiment breakdowns. Use when analyzing market mood, understanding sentiment drivers, or comparing fundamental vs technical vs news sentiment.
 ---
 

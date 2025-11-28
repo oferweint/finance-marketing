@@ -1,5 +1,6 @@
 ---
 name: acceleration-alerts
+version: 2025-11-28
 description: Detect velocity spikes and acceleration events for any stock/crypto. Shows spike magnitude, timing, triggers, and historical context with normalized baselines. Uses XPOZ MCP for real-time Twitter data. Activate when monitoring for breakout signals, sudden attention surges, or velocity anomalies.
 ---
 

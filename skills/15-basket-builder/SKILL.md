@@ -1,5 +1,6 @@
 ---
 name: basket-builder
+version: 2025-11-28
 description: Build thematic investment baskets using social sentiment and narrative analysis. Creates optimized portfolios around themes like AI, EVs, or crypto. Use when creating thematic exposure, finding related assets, or building sentiment-weighted portfolios.
 ---
 

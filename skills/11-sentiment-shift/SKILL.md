@@ -1,5 +1,6 @@
 ---
 name: sentiment-shift
+version: 2025-11-28
 description: Detect and visualize sentiment changes over time for financial assets. Shows shift magnitude, timing, and potential catalysts. Use when monitoring for sentiment reversals, tracking narrative changes, or identifying inflection points.
 ---
 

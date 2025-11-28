@@ -1,5 +1,6 @@
 ---
 name: category-heatmap
+version: 2025-11-28
 description: Interactive heatmap showing normalized social velocity across market sectors. Compare real-time activity levels vs historical baselines across tech, crypto, EVs, and other categories. Drill down into any category to see individual tickers.
 ---
 

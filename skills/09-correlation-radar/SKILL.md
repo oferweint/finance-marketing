@@ -1,5 +1,6 @@
 ---
 name: correlation-radar
+version: 2025-11-28
 description: Analyze social sentiment correlations between assets. Shows correlation matrix, cluster analysis, and divergence opportunities. Use when finding pair trades, analyzing sector correlations, or detecting unusual decouplings.
 ---
 

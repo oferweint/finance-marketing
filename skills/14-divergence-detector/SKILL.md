@@ -1,5 +1,6 @@
 ---
 name: divergence-detector
+version: 2025-11-28
 description: Detect divergences between retail and smart money sentiment on financial assets. Shows sentiment gaps, historical accuracy, and contrarian signals. Use when finding contrarian opportunities, validating trades, or understanding sentiment disagreements.
 ---
 

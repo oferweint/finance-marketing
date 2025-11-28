@@ -1,5 +1,6 @@
 ---
 name: narrative-tracker
+version: 2025-11-28
 description: Track and visualize competing narratives around a financial asset. Shows narrative strength, evolution, and conflicts. Use when understanding market stories, tracking thesis changes, or identifying narrative catalysts.
 ---
 

@@ -1,5 +1,6 @@
 ---
 name: velocity-tracker
+version: 2025-11-28
 description: Track normalized social discussion velocity for any stock/crypto. Shows velocity relative to hourly baseline (last 3 days), with category comparison tab showing selected asset vs 4 category peers. Uses XPOZ MCP for real-time Twitter data. Activate when user asks about velocity, buzz, social activity, or mentions for any ticker.
 ---
 

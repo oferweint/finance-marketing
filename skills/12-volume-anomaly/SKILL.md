@@ -1,5 +1,6 @@
 ---
 name: volume-anomaly
+version: 2025-11-28
 description: Detect unusual patterns in social mention volume for financial assets. Identifies anomalies, coordinated activity, and irregular spikes. Use when validating signals, detecting manipulation, or finding unusual activity.
 ---
 

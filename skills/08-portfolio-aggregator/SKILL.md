@@ -1,5 +1,6 @@
 ---
 name: portfolio-aggregator
+version: 2025-11-28
 description: Aggregate social sentiment and velocity across an entire portfolio. Shows portfolio health score, flagged holdings, and cross-asset correlations. Use when monitoring watchlists, checking portfolio sentiment exposure, or identifying problem holdings.
 ---
 

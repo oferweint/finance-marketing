@@ -1,5 +1,6 @@
 ---
 name: position-tracker
+version: 2025-11-28
 description: Track stated bull and bear positions from key influencers over time for any ticker. Visualize position changes, conviction levels, and compare positioning across peer stocks. Powered by real-time XPOZ MCP Twitter data.
 ---
 

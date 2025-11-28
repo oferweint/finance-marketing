@@ -1,5 +1,6 @@
 ---
 name: rising-tickers
+version: 2025-11-28
 description: Discover emerging assets gaining social traction before mainstream attention. Input any category to find rising tickers with velocity acceleration, normalized against hourly baselines. Compare across peer categories for cross-sector opportunities.
 ---
 

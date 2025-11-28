@@ -1,5 +1,6 @@
 ---
 name: influencer-radar
+version: 2025-11-28
 description: Identify key voices and influencers discussing any financial asset. Input any ticker to see top accounts by reach, engagement, and influence. Compare sentiment across peer group influencers with real-time Twitter data.
 ---
 

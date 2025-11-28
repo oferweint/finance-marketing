@@ -1,5 +1,6 @@
 ---
 name: quality-index
+version: 2025-11-28
 description: Assess the authenticity and quality of social mentions for an asset. Detects bot activity, spam campaigns, and genuine engagement. Use when validating signals, filtering noise, or assessing mention credibility.
 ---
 
