@@ -878,9 +878,19 @@ async function fetchLiveVelocityData(ticker: string): Promise<VelocityTrackerDat
     });
   }
 
-  // Use the last COMPLETE hour (not current incomplete hour) for display values
-  // At 17:34, we show 16:00-17:00 data, not 17:00-17:34 data
-  const displayHourIndex = hourlyData.length >= 2 ? hourlyData.length - 2 : hourlyData.length - 1;
+  // Find the most recent hour with actual data (non-zero mentions)
+  // Skip the current incomplete hour, then find the last hour with mentions > 0
+  let displayHourIndex = hourlyData.length - 1;
+
+  // Start from second-to-last (previous complete hour) and search backwards
+  for (let i = hourlyData.length - 2; i >= 0; i--) {
+    if (hourlyData[i].actual > 0) {
+      displayHourIndex = i;
+      break;
+    }
+  }
+
+  // Fallback to last hour if all hours have 0 mentions (shouldn't happen)
   const displayHourData = hourlyData[displayHourIndex];
   const ratio = displayHourData.actual / displayHourData.baseline;
 
