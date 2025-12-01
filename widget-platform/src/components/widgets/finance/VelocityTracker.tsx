@@ -382,7 +382,7 @@ function VelocityTrackerContent({
       {/* Interpretation */}
       <div className="mt-4 bg-slate-800 rounded-lg p-4">
         <h3 className="text-sm font-medium mb-2">Interpretation</h3>
-        <p className="text-slate-400 text-sm">
+        <p className="text-slate-400 text-sm" suppressHydrationWarning>
           {ticker} velocity is at {currentVelocity.toFixed(1)} (
           {getVelocityDescription(currentVelocity)}). Current mentions are{' '}
           {baselineRatio > 1
