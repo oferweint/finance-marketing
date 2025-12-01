@@ -30,7 +30,7 @@ import {
 } from '@/lib/theme';
 
 interface VelocityTrackerProps {
-  ticker: string;
+  ticker?: string;
   autoRefresh?: boolean;
 }
 
@@ -127,15 +127,15 @@ function VelocityTrackerContent({
 
   const {
     ticker,
-    category,
-    currentVelocity,
-    currentActual,
-    currentBaseline,
-    baselineRatio,
-    trend,
-    signal,
-    hourlyData,
-    categoryPeers,
+    category = 'Unknown',
+    currentVelocity = 0,
+    currentActual = 0,
+    currentBaseline = 1,
+    baselineRatio = 1,
+    trend = 'stable' as const,
+    signal = 'NORMAL' as const,
+    hourlyData = [],
+    categoryPeers = [],
   } = data;
 
   const TrendIcon =
@@ -151,17 +151,31 @@ function VelocityTrackerContent({
       ? 'text-red-400'
       : 'text-gray-400';
 
-  // Build comparison data for line chart
+  // Build comparison data for line chart using real hourly velocity data
   const comparisonData = hourlyData.map((h, i) => {
     const result: Record<string, number | string> = {
       time: h.time,
       [ticker]: h.velocity,
     };
-    categoryPeers.slice(1).forEach((peer, j) => {
-      result[peer.ticker] = 4.5 + Math.sin((i + j) / 4) * 1.5;
+    // Use real hourlyVelocity data from API if available, otherwise fallback to current velocity
+    categoryPeers.slice(1).forEach((peer) => {
+      if (peer.hourlyVelocity && peer.hourlyVelocity[i] !== undefined) {
+        result[peer.ticker] = peer.hourlyVelocity[i];
+      } else {
+        // Fallback: use current velocity as constant line
+        result[peer.ticker] = peer.velocity;
+      }
     });
     return result;
   });
+
+  // Calculate dynamic Y-axis max from all data
+  const allVelocities: number[] = [
+    ...hourlyData.map(h => h.velocity),
+    ...categoryPeers.flatMap(p => p.hourlyVelocity || [p.velocity]),
+  ];
+  const maxVelocity = Math.max(...allVelocities, 10); // At least 10
+  const yAxisMax = Math.ceil(maxVelocity * 1.1); // Add 10% headroom
 
   return (
     <div className="pt-8">
@@ -180,7 +194,7 @@ function VelocityTrackerContent({
           </div>
         </div>
         <div className="text-right">
-          <div className="text-4xl font-bold text-blue-400">
+          <div className="text-4xl font-bold text-blue-400" suppressHydrationWarning>
             {currentVelocity.toFixed(1)}
           </div>
           <div
@@ -196,13 +210,13 @@ function VelocityTrackerContent({
       {/* Stats Row */}
       <div className="grid grid-cols-4 gap-4 mb-6">
         <div className="bg-slate-800 rounded-lg p-4">
-          <div className="text-slate-400 text-xs mb-1">Current Hour</div>
-          <div className="text-xl font-bold">{currentActual}</div>
+          <div className="text-slate-400 text-xs mb-1">Last Hour</div>
+          <div className="text-xl font-bold" suppressHydrationWarning>{currentActual}</div>
           <div className="text-slate-500 text-xs">mentions</div>
         </div>
         <div className="bg-slate-800 rounded-lg p-4">
           <div className="text-slate-400 text-xs mb-1">Baseline</div>
-          <div className="text-xl font-bold">{currentBaseline}</div>
+          <div className="text-xl font-bold" suppressHydrationWarning>{currentBaseline}</div>
           <div className="text-slate-500 text-xs">expected</div>
         </div>
         <div className="bg-slate-800 rounded-lg p-4">
@@ -211,17 +225,18 @@ function VelocityTrackerContent({
             className={`text-xl font-bold ${
               baselineRatio > 1 ? 'text-green-400' : 'text-red-400'
             }`}
+            suppressHydrationWarning
           >
             {baselineRatio > 1 ? '+' : ''}
             {((baselineRatio - 1) * 100).toFixed(0)}%
           </div>
-          <div className="text-slate-500 text-xs">
+          <div className="text-slate-500 text-xs" suppressHydrationWarning>
             {baselineRatio > 1 ? 'above' : 'below'}
           </div>
         </div>
         <div className="bg-slate-800 rounded-lg p-4">
           <div className="text-slate-400 text-xs mb-1">Trend</div>
-          <div className={`flex items-center gap-1 ${trendColor}`}>
+          <div className={`flex items-center gap-1 ${trendColor}`} suppressHydrationWarning>
             <TrendIcon className="w-5 h-5" />
             <span className="text-xl font-bold capitalize">{trend}</span>
           </div>
@@ -273,7 +288,7 @@ function VelocityTrackerContent({
                 tick={{ fill: '#94a3b8', fontSize: 12 }}
               />
               <YAxis
-                domain={[0, 10]}
+                domain={[0, yAxisMax]}
                 {...chartConfig.axis}
                 tick={{ fill: '#94a3b8', fontSize: 12 }}
               />
@@ -317,7 +332,7 @@ function VelocityTrackerContent({
                 tick={{ fill: '#94a3b8', fontSize: 12 }}
               />
               <YAxis
-                domain={[0, 10]}
+                domain={[0, yAxisMax]}
                 {...chartConfig.axis}
                 tick={{ fill: '#94a3b8', fontSize: 12 }}
               />
@@ -380,7 +395,7 @@ function VelocityTrackerContent({
   );
 }
 
-export function VelocityTracker({ ticker, autoRefresh }: VelocityTrackerProps) {
+export function VelocityTracker({ ticker = 'TSLA', autoRefresh }: VelocityTrackerProps) {
   return (
     <WidgetWrapper
       category="finance"
@@ -389,8 +404,9 @@ export function VelocityTracker({ ticker, autoRefresh }: VelocityTrackerProps) {
       autoRefresh={autoRefresh}
     >
       {(rawData, isLoading, isError) => {
-        // Use mock data for now (will be replaced by API)
-        const data = rawData as VelocityTrackerData | null || generateMockData(ticker);
+        // Extract data from API response structure { success, data, cached }
+        const apiResponse = rawData as { success: boolean; data: VelocityTrackerData } | null;
+        const data = apiResponse?.data || generateMockData(ticker);
         return <VelocityTrackerContent data={data} isLoading={isLoading} />;
       }}
     </WidgetWrapper>

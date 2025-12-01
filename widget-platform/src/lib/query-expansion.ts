@@ -3,9 +3,55 @@
  *
  * Expands ticker symbols to include company names and variations
  * to capture 5-8x more mentions than ticker-only searches.
+ *
+ * Supports both static mapping (for speed) and dynamic Yahoo Finance lookup.
  */
 
-// Ticker to company name mapping
+// Dynamic cache for ticker lookups (in-memory)
+const dynamicTickerCache = new Map<string, string[]>();
+
+/**
+ * Fetch company name from Yahoo Finance API (free, no API key required)
+ */
+async function fetchCompanyNameFromYahoo(ticker: string): Promise<string[]> {
+  try {
+    const url = `https://query1.finance.yahoo.com/v1/finance/search?q=${ticker}&quotesCount=1&newsCount=0`;
+    const response = await fetch(url, {
+      headers: { 'User-Agent': 'Mozilla/5.0' },
+    });
+
+    if (!response.ok) return [];
+
+    const data = await response.json();
+    const quote = data.quotes?.[0];
+
+    if (quote && quote.shortname) {
+      const names: string[] = [];
+
+      // Add short name (e.g., "Palantir Technologies")
+      if (quote.shortname) names.push(quote.shortname);
+
+      // Add long name if different (e.g., "Palantir Technologies Inc.")
+      if (quote.longname && quote.longname !== quote.shortname) {
+        names.push(quote.longname);
+      }
+
+      // Extract simple company name (first word or two)
+      const simpleName = quote.shortname.split(/\s+(Inc|Corp|Ltd|LLC|Technologies|Holdings|Group|Co)\b/i)[0].trim();
+      if (simpleName && simpleName !== quote.shortname && simpleName.length > 2) {
+        names.push(simpleName);
+      }
+
+      return names;
+    }
+  } catch (error) {
+    console.log(`[Query Expansion] Yahoo lookup failed for ${ticker}:`, error);
+  }
+
+  return [];
+}
+
+// Ticker to company name mapping (static cache for common tickers)
 const TICKER_COMPANY_MAP: Record<string, string[]> = {
   // EV / Electric Vehicles
   TSLA: ['Tesla'],
@@ -67,6 +113,18 @@ const TICKER_COMPANY_MAP: Record<string, string[]> = {
   HOOD: ['Robinhood'],
   AFRM: ['Affirm'],
 
+  // Enterprise / Data Analytics
+  PLTR: ['Palantir', 'Palantir Technologies'],
+  SNOW: ['Snowflake'],
+  DDOG: ['Datadog'],
+  MDB: ['MongoDB'],
+  NET: ['Cloudflare'],
+  CRM: ['Salesforce'],
+  ORCL: ['Oracle'],
+  IBM: ['IBM'],
+  NOW: ['ServiceNow'],
+  PANW: ['Palo Alto', 'Palo Alto Networks'],
+
   // Biotech
   MRNA: ['Moderna'],
   BNTX: ['BioNTech'],
@@ -122,15 +180,40 @@ export const CATEGORY_TICKERS: Record<string, string[]> = {
 
 /**
  * Build an expanded query for a ticker symbol.
+ * Uses static mapping first, then falls back to Yahoo Finance API for unknown tickers.
  *
  * @param ticker - The ticker symbol (e.g., 'TSLA')
  * @returns Expanded query string (e.g., '$TSLA OR #TSLA OR TSLA OR Tesla')
  */
-export function buildExpandedQuery(ticker: string | null): string {
+export async function buildExpandedQuery(ticker: string | null): Promise<string> {
   if (!ticker) return '';
 
   const normalizedTicker = ticker.toUpperCase().replace('$', '').replace('#', '');
-  const companyNames = TICKER_COMPANY_MAP[normalizedTicker] || [];
+
+  // Try static mapping first (fastest)
+  let companyNames = TICKER_COMPANY_MAP[normalizedTicker];
+
+  // Fallback to dynamic lookup if not in static map
+  if (!companyNames || companyNames.length === 0) {
+    // Check cache first
+    if (dynamicTickerCache.has(normalizedTicker)) {
+      companyNames = dynamicTickerCache.get(normalizedTicker)!;
+      console.log(`[Query Expansion] Cache hit for ${normalizedTicker}:`, companyNames);
+    } else {
+      // Fetch from Yahoo Finance API
+      console.log(`[Query Expansion] Fetching from Yahoo Finance for ${normalizedTicker}...`);
+      companyNames = await fetchCompanyNameFromYahoo(normalizedTicker);
+
+      // Cache the result (even if empty, to avoid repeated API calls)
+      dynamicTickerCache.set(normalizedTicker, companyNames);
+
+      if (companyNames.length > 0) {
+        console.log(`[Query Expansion] Yahoo Finance returned for ${normalizedTicker}:`, companyNames);
+      } else {
+        console.log(`[Query Expansion] No company name found for ${normalizedTicker}`);
+      }
+    }
+  }
 
   const parts: string[] = [
     `$${normalizedTicker}`,
@@ -139,7 +222,7 @@ export function buildExpandedQuery(ticker: string | null): string {
   ];
 
   // Add company names
-  for (const name of companyNames) {
+  for (const name of companyNames || []) {
     parts.push(name);
   }
 

@@ -3,12 +3,41 @@
 import { useParams, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { getFinanceWidgetConfig } from '@/types/widgets';
-import { VelocityTracker } from '@/components/widgets/finance/VelocityTracker';
+import {
+  VelocityTracker,
+  AccelerationAlerts,
+  CategoryHeatmap,
+  InfluencerRadar,
+  PositionTracker,
+  RisingTickers,
+  SentimentDeepDive,
+  PortfolioAggregator,
+  CorrelationRadar,
+  QualityIndex,
+  SentimentShift,
+  VolumeAnomaly,
+  NarrativeTracker,
+  DivergenceDetector,
+  BasketBuilder,
+} from '@/components/widgets/finance';
 
-// Widget component registry - add more as they are implemented
-const WIDGET_COMPONENTS: Record<string, React.ComponentType<{ ticker: string; autoRefresh?: boolean }>> = {
+// Widget component registry - all 15 finance widgets
+const WIDGET_COMPONENTS: Record<string, React.ComponentType<{ ticker?: string; tickers?: string; theme?: string; autoRefresh?: boolean }>> = {
   'velocity-tracker': VelocityTracker,
-  // Add more widgets here as they are implemented
+  'acceleration-alerts': AccelerationAlerts,
+  'category-heatmap': CategoryHeatmap,
+  'influencer-radar': InfluencerRadar,
+  'position-tracker': PositionTracker,
+  'rising-tickers': RisingTickers,
+  'sentiment-deep-dive': SentimentDeepDive,
+  'portfolio-aggregator': PortfolioAggregator,
+  'correlation-radar': CorrelationRadar,
+  'quality-index': QualityIndex,
+  'sentiment-shift': SentimentShift,
+  'volume-anomaly': VolumeAnomaly,
+  'narrative-tracker': NarrativeTracker,
+  'divergence-detector': DivergenceDetector,
+  'basket-builder': BasketBuilder,
 };
 
 function EmbedContent() {

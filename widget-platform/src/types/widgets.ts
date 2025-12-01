@@ -51,6 +51,7 @@ export interface PeerData {
   trend: 'accelerating' | 'decelerating' | 'stable';
   mentions: number;
   color: string;
+  hourlyVelocity?: number[]; // Velocity for each hour (index 0 = hour 0, etc.)
 }
 
 export type Signal = 'VERY_HIGH' | 'HIGH_ACTIVITY' | 'ELEVATED' | 'NORMAL' | 'LOW';

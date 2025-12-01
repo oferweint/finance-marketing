@@ -1,17 +1,39 @@
 @import "tailwindcss";
 
 :root {
-  /* Dark theme by default (matching existing widgets) */
-  --background: #0f172a; /* slate-900 */
-  --foreground: #f8fafc; /* slate-50 */
-  --card-background: #1e293b; /* slate-800 */
-  --card-hover: #334155; /* slate-700 */
+  /* XPOZ Brand Colors - Light Theme */
+  --background: #ffffff;
+  --background-secondary: #f8fafc; /* slate-50 */
+  --foreground: #1e293b; /* slate-800 */
+  --foreground-muted: #64748b; /* slate-500 */
+
+  /* Cards */
+  --card-background: #ffffff;
+  --card-border: #e2e8f0; /* slate-200 */
+  --card-hover: #f1f5f9; /* slate-100 */
+
+  /* Primary Blue */
+  --primary: #3b82f6; /* blue-500 */
+  --primary-hover: #2563eb; /* blue-600 */
+  --primary-light: #dbeafe; /* blue-100 */
+
+  /* Accent gradient (purple to blue) - for hero */
+  --gradient-start: #8b5cf6; /* violet-500 */
+  --gradient-mid: #6366f1; /* indigo-500 */
+  --gradient-end: #3b82f6; /* blue-500 */
+
+  /* Dark sections (for contrast blocks) */
+  --dark-bg: #0f172a; /* slate-900 */
+  --dark-card: #1e293b; /* slate-800 */
+  --dark-border: #334155; /* slate-700 */
+  --dark-text: #f8fafc; /* slate-50 */
+  --dark-muted: #94a3b8; /* slate-400 */
+
+  /* Status colors */
+  --success: #22c55e; /* green-500 */
+  --warning: #f59e0b; /* amber-500 */
+  --danger: #ef4444; /* red-500 */
   --muted: #64748b; /* slate-500 */
-  --accent-blue: #60a5fa; /* blue-400 */
-  --accent-green: #4ade80; /* green-400 */
-  --accent-red: #f87171; /* red-400 */
-  --accent-yellow: #facc15; /* yellow-400 */
-  --accent-purple: #a78bfa; /* purple-400 */
 }
 
 @theme inline {
@@ -27,10 +49,26 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 }
 
-/* Widget styling */
+/* Hero gradient section */
+.hero-gradient {
+  background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-mid) 50%, var(--gradient-end) 100%);
+}
+
+/* Dark section styling */
+.section-dark {
+  background: var(--dark-bg);
+  color: var(--dark-text);
+}
+
+/* Light card styling */
+.card-light {
+  @apply bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-shadow;
+}
+
+/* Widget container - keeps dark theme for embedding */
 .widget-container {
   @apply bg-slate-900 rounded-xl p-6 text-white;
 }
@@ -72,22 +110,36 @@ body {
   @apply bg-slate-800 border border-slate-700 rounded-lg p-3 shadow-lg;
 }
 
-/* Button styling */
+/* Button styling - XPOZ style */
 .btn-primary {
-  @apply bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors;
+  @apply bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-medium transition-colors;
 }
 
 .btn-secondary {
-  @apply bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg font-medium transition-colors;
+  @apply bg-white hover:bg-slate-50 text-slate-800 border border-slate-200 px-6 py-3 rounded-lg font-medium transition-colors;
+}
+
+.btn-dark {
+  @apply bg-slate-800 hover:bg-slate-700 text-white px-6 py-3 rounded-lg font-medium transition-colors;
 }
 
 /* Tab styling */
 .tab-active {
-  @apply bg-slate-700 text-white;
+  @apply bg-blue-500 text-white;
 }
 
 .tab-inactive {
-  @apply bg-slate-800 text-slate-400 hover:text-white;
+  @apply bg-slate-100 text-slate-600 hover:bg-slate-200;
+}
+
+/* Code blocks */
+.code-block {
+  @apply bg-slate-900 text-slate-100 rounded-lg p-4 font-mono text-sm overflow-x-auto;
+}
+
+/* Feature cards (light) */
+.feature-card {
+  @apply bg-white border border-slate-200 rounded-xl p-6 hover:border-blue-200 hover:shadow-lg transition-all;
 }
 
 /* Scrollbar styling */
@@ -97,9 +149,18 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-slate-800 rounded;
+  @apply bg-slate-100 rounded;
 }
 
 ::-webkit-scrollbar-thumb {
+  @apply bg-slate-300 rounded hover:bg-slate-400;
+}
+
+/* Dark mode scrollbar for widgets */
+.widget-container::-webkit-scrollbar-track {
+  @apply bg-slate-800 rounded;
+}
+
+.widget-container::-webkit-scrollbar-thumb {
   @apply bg-slate-600 rounded hover:bg-slate-500;
 }
