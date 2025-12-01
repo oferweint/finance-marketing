@@ -133,7 +133,7 @@ function DivergenceDetectorContent({
           </div>
         </div>
         <div className="text-right">
-          <div className={`text-4xl font-bold ${getDivergenceColor(divergenceScore)}`}>
+          <div className={`text-4xl font-bold ${getDivergenceColor(divergenceScore)}`} suppressHydrationWarning>
             {divergenceScore}
           </div>
           <div className="text-slate-400 text-sm">Divergence Score</div>
@@ -147,14 +147,14 @@ function DivergenceDetectorContent({
             <Users className="w-5 h-5 text-blue-400" />
             <span className="text-slate-400 text-sm">Retail</span>
           </div>
-          <div className="text-3xl font-bold text-blue-400">{retailSentiment}</div>
+          <div className="text-3xl font-bold text-blue-400" suppressHydrationWarning>{retailSentiment}</div>
         </div>
         <div className="bg-slate-800 rounded-lg p-4">
           <div className="flex items-center gap-2 mb-2">
             <Briefcase className="w-5 h-5 text-purple-400" />
             <span className="text-slate-400 text-sm">Smart Money</span>
           </div>
-          <div className="text-3xl font-bold text-purple-400">{smartMoneySentiment}</div>
+          <div className="text-3xl font-bold text-purple-400" suppressHydrationWarning>{smartMoneySentiment}</div>
         </div>
         <div className="bg-slate-800 rounded-lg p-4">
           <div className="flex items-center gap-2 mb-2">
@@ -222,7 +222,7 @@ function DivergenceDetectorContent({
             {significantDivergences.map((div, i) => (
               <div key={i} className="flex items-center justify-between py-2 border-b border-slate-700 last:border-0">
                 <div className="text-sm text-slate-400">{div.time}</div>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-4" suppressHydrationWarning>
                   <div className="text-sm">
                     <span className="text-blue-400">Retail: {div.retail}</span>
                   </div>

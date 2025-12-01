@@ -142,7 +142,7 @@ function SentimentDeepDiveContent({
           </div>
         </div>
         <div className="text-right">
-          <div className={`text-4xl font-bold ${getSentimentColor(overallSentiment)}`}>
+          <div className={`text-4xl font-bold ${getSentimentColor(overallSentiment)}`} suppressHydrationWarning>
             {overallSentiment}
           </div>
           <div className="flex items-center gap-1 justify-end text-slate-400">
@@ -156,7 +156,7 @@ function SentimentDeepDiveContent({
       <div className="grid grid-cols-4 gap-4 mb-6">
         {Object.entries(sentimentByCategory).map(([key, value]) => (
           <div key={key} className="bg-slate-800 rounded-lg p-4 text-center">
-            <div className={`text-2xl font-bold ${getSentimentColor(value)}`}>{value}</div>
+            <div className={`text-2xl font-bold ${getSentimentColor(value)}`} suppressHydrationWarning>{value}</div>
             <div className="text-slate-400 text-xs capitalize">{key}</div>
           </div>
         ))}
@@ -239,13 +239,13 @@ function SentimentDeepDiveContent({
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
                     <p className="text-sm mb-2">{post.text}</p>
-                    <div className="flex items-center gap-4 text-xs text-slate-400">
+                    <div className="flex items-center gap-4 text-xs text-slate-400" suppressHydrationWarning>
                       <span>{post.author}</span>
                       <span className="capitalize">{post.category}</span>
                       <span>{post.engagement} engagements</span>
                     </div>
                   </div>
-                  <div className={`px-2 py-1 rounded text-xs font-medium ${getSentimentColor(post.sentiment)} bg-slate-800`}>
+                  <div className={`px-2 py-1 rounded text-xs font-medium ${getSentimentColor(post.sentiment)} bg-slate-800`} suppressHydrationWarning>
                     {post.sentiment}
                   </div>
                 </div>
@@ -258,7 +258,7 @@ function SentimentDeepDiveContent({
       {/* Interpretation */}
       <div className="mt-4 bg-slate-800 rounded-lg p-4">
         <h3 className="text-sm font-medium mb-2">Interpretation</h3>
-        <p className="text-slate-400 text-sm">
+        <p className="text-slate-400 text-sm" suppressHydrationWarning>
           Overall sentiment for {ticker} is {getSentimentLabel(overallSentiment).toLowerCase()} at {overallSentiment}/100.
           {' '}The strongest category is{' '}
           {Object.entries(sentimentByCategory).sort((a, b) => b[1] - a[1])[0][0]} analysis,

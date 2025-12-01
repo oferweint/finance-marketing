@@ -130,7 +130,7 @@ function PositionTrackerContent({
           </div>
         </div>
         <div className="text-right">
-          <div className="text-4xl font-bold text-violet-400">{totalPositions}</div>
+          <div className="text-4xl font-bold text-violet-400" suppressHydrationWarning>{totalPositions}</div>
           <div className="text-slate-400 text-sm">Total Positions</div>
         </div>
       </div>
@@ -142,16 +142,16 @@ function PositionTrackerContent({
             <TrendingUp className="w-5 h-5 text-green-400" />
             <span className="text-slate-400">Bulls</span>
           </div>
-          <div className="text-3xl font-bold text-green-400">{bullCount}</div>
-          <div className="text-sm text-slate-400">{bullPercentage}% of total</div>
+          <div className="text-3xl font-bold text-green-400" suppressHydrationWarning>{bullCount}</div>
+          <div className="text-sm text-slate-400" suppressHydrationWarning>{bullPercentage}% of total</div>
         </div>
         <div className="bg-slate-800 rounded-lg p-4">
           <div className="flex items-center gap-2 mb-2">
             <TrendingDown className="w-5 h-5 text-red-400" />
             <span className="text-slate-400">Bears</span>
           </div>
-          <div className="text-3xl font-bold text-red-400">{bearCount}</div>
-          <div className="text-sm text-slate-400">{bearPercentage}% of total</div>
+          <div className="text-3xl font-bold text-red-400" suppressHydrationWarning>{bearCount}</div>
+          <div className="text-sm text-slate-400" suppressHydrationWarning>{bearPercentage}% of total</div>
         </div>
       </div>
 
@@ -224,13 +224,13 @@ function PositionTrackerContent({
                   <span className="text-slate-400 text-sm">#{i + 1}</span>
                   <div>
                     <div className="text-sm font-medium">@{user.username}</div>
-                    <div className="text-xs text-slate-400 flex items-center gap-1">
+                    <div className="text-xs text-slate-400 flex items-center gap-1" suppressHydrationWarning>
                       <Users className="w-3 h-3" />
                       {formatFollowers(user.followers)}
                     </div>
                   </div>
                 </div>
-                <div className="text-green-400 font-bold">{user.conviction}%</div>
+                <div className="text-green-400 font-bold" suppressHydrationWarning>{user.conviction}%</div>
               </div>
             ))}
           </div>
@@ -248,13 +248,13 @@ function PositionTrackerContent({
                   <span className="text-slate-400 text-sm">#{i + 1}</span>
                   <div>
                     <div className="text-sm font-medium">@{user.username}</div>
-                    <div className="text-xs text-slate-400 flex items-center gap-1">
+                    <div className="text-xs text-slate-400 flex items-center gap-1" suppressHydrationWarning>
                       <Users className="w-3 h-3" />
                       {formatFollowers(user.followers)}
                     </div>
                   </div>
                 </div>
-                <div className="text-red-400 font-bold">{user.conviction}%</div>
+                <div className="text-red-400 font-bold" suppressHydrationWarning>{user.conviction}%</div>
               </div>
             ))}
           </div>

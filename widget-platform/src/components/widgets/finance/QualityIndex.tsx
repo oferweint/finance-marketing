@@ -140,7 +140,7 @@ function QualityIndexContent({
           </div>
         </div>
         <div className="text-right">
-          <div className={`text-4xl font-bold ${getQualityColor(qualityScore)}`}>
+          <div className={`text-4xl font-bold ${getQualityColor(qualityScore)}`} suppressHydrationWarning>
             {qualityScore}
           </div>
           <div className="text-slate-400 text-sm">Quality Score</div>
@@ -239,11 +239,11 @@ function QualityIndexContent({
                 <span className="font-medium">@{account.username}</span>
               </div>
               <div className="text-right">
-                <div className="text-orange-400 font-bold">{account.confidence}%</div>
+                <div className="text-orange-400 font-bold" suppressHydrationWarning>{account.confidence}%</div>
                 <div className="text-xs text-slate-400">confidence</div>
               </div>
               <div className="text-right">
-                <div className="text-sm">{account.posts}</div>
+                <div className="text-sm" suppressHydrationWarning>{account.posts}</div>
                 <div className="text-xs text-slate-400">posts</div>
               </div>
             </div>

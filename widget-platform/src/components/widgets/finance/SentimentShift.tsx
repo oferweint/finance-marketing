@@ -155,7 +155,7 @@ function SentimentShiftContent({
           </div>
         </div>
         <div className="text-right">
-          <div className={`text-4xl font-bold ${getSentimentColor(currentSentiment)}`}>
+          <div className={`text-4xl font-bold ${getSentimentColor(currentSentiment)}`} suppressHydrationWarning>
             {currentSentiment}
           </div>
           <div className="text-slate-400 text-sm">Current Sentiment</div>
@@ -165,19 +165,19 @@ function SentimentShiftContent({
       {/* Change Stats */}
       <div className="grid grid-cols-3 gap-4 mb-6">
         <div className="bg-slate-800 rounded-lg p-4 text-center">
-          <div className={`text-2xl font-bold ${sentimentChange24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+          <div className={`text-2xl font-bold ${sentimentChange24h >= 0 ? 'text-green-400' : 'text-red-400'}`} suppressHydrationWarning>
             {sentimentChange24h >= 0 ? '+' : ''}{sentimentChange24h}
           </div>
           <div className="text-slate-400 text-xs">24h Change</div>
         </div>
         <div className="bg-slate-800 rounded-lg p-4 text-center">
-          <div className={`text-2xl font-bold ${sentimentChange7d >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+          <div className={`text-2xl font-bold ${sentimentChange7d >= 0 ? 'text-green-400' : 'text-red-400'}`} suppressHydrationWarning>
             {sentimentChange7d >= 0 ? '+' : ''}{sentimentChange7d}
           </div>
           <div className="text-slate-400 text-xs">7d Change</div>
         </div>
         <div className="bg-slate-800 rounded-lg p-4 text-center">
-          <div className="text-2xl font-bold text-purple-400">{recentShifts.length}</div>
+          <div className="text-2xl font-bold text-purple-400" suppressHydrationWarning>{recentShifts.length}</div>
           <div className="text-slate-400 text-xs">Shift Events</div>
         </div>
       </div>
@@ -253,7 +253,7 @@ function SentimentShiftContent({
                   <span className="font-medium capitalize">{shift.direction} Shift</span>
                   <span className={`text-sm font-bold ${
                     shift.direction === 'bullish' ? 'text-green-400' : 'text-red-400'
-                  }`}>
+                  }`} suppressHydrationWarning>
                     {shift.direction === 'bullish' ? '+' : '-'}{shift.magnitude} pts
                   </span>
                 </div>
@@ -265,10 +265,10 @@ function SentimentShiftContent({
                 )}
               </div>
               <div className="text-right">
-                <div className="text-sm">
+                <div className="text-sm" suppressHydrationWarning>
                   {shift.fromSentiment} → {shift.toSentiment}
                 </div>
-                <div className="text-xs text-slate-400">
+                <div className="text-xs text-slate-400" suppressHydrationWarning>
                   {new Date(shift.time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                 </div>
               </div>

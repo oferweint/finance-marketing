@@ -153,7 +153,7 @@ function VolumeAnomalyContent({
               <span className="text-sm font-medium">Anomaly Detected</span>
             </div>
           )}
-          <div className={`text-4xl font-bold ${isAnomaly ? 'text-amber-400' : 'text-green-400'}`}>
+          <div className={`text-4xl font-bold ${isAnomaly ? 'text-amber-400' : 'text-green-400'}`} suppressHydrationWarning>
             {anomalyScore}
           </div>
           <div className="text-slate-400 text-sm">Anomaly Score</div>
@@ -163,11 +163,11 @@ function VolumeAnomalyContent({
       {/* Stats */}
       <div className="grid grid-cols-4 gap-4 mb-6">
         <div className="bg-slate-800 rounded-lg p-4 text-center">
-          <div className="text-2xl font-bold text-blue-400">{currentVolume}</div>
+          <div className="text-2xl font-bold text-blue-400" suppressHydrationWarning>{currentVolume}</div>
           <div className="text-slate-400 text-xs">Current Volume</div>
         </div>
         <div className="bg-slate-800 rounded-lg p-4 text-center">
-          <div className="text-2xl font-bold text-slate-400">{expectedVolume}</div>
+          <div className="text-2xl font-bold text-slate-400" suppressHydrationWarning>{expectedVolume}</div>
           <div className="text-slate-400 text-xs">Expected</div>
         </div>
         <div className="bg-slate-800 rounded-lg p-4 text-center">
@@ -177,7 +177,7 @@ function VolumeAnomalyContent({
           <div className="text-slate-400 text-xs">Deviation</div>
         </div>
         <div className="bg-slate-800 rounded-lg p-4 text-center">
-          <div className="text-2xl font-bold text-purple-400">{recentAnomalies.length}</div>
+          <div className="text-2xl font-bold text-purple-400" suppressHydrationWarning>{recentAnomalies.length}</div>
           <div className="text-slate-400 text-xs">Anomalies Today</div>
         </div>
       </div>
@@ -242,12 +242,12 @@ function VolumeAnomalyContent({
                     <span className={`px-2 py-0.5 rounded text-xs ${getSeverityColor(anomaly.severity)}`}>
                       {anomaly.severity.toUpperCase()}
                     </span>
-                    <span className="text-sm">+{anomaly.deviation}% deviation</span>
+                    <span className="text-sm" suppressHydrationWarning>+{anomaly.deviation}% deviation</span>
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-sm font-medium">{anomaly.volume} mentions</div>
-                  <div className="text-xs text-slate-400 flex items-center gap-1 justify-end">
+                  <div className="text-sm font-medium" suppressHydrationWarning>{anomaly.volume} mentions</div>
+                  <div className="text-xs text-slate-400 flex items-center gap-1 justify-end" suppressHydrationWarning>
                     <Clock className="w-3 h-3" />
                     {new Date(anomaly.time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                   </div>

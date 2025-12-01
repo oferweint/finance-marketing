@@ -1073,29 +1073,30 @@ async function fetchLiveAccelerationData(ticker: string) {
   const alerts = [];
 
   // Generate alerts based on today's hourly data vs historical baseline
+  // Track previous velocity for acceleration calculation
+  let previousVelocity = 5; // Default baseline
   for (let hour = 0; hour <= currentHour; hour++) {
     const mentions = todayByHour.get(hour) || 0;
     const baseline = baselineByHour.get(hour) || 1;
     const velocity = calculateVelocity(mentions, baseline);
     const { signal } = calculateVelocityMetrics(mentions, baseline);
-    const acceleration = (mentions - baseline) / baseline;
+    const acceleration = velocity - previousVelocity;
 
     // Only include hours with significant deviation as alerts
-    if (Math.abs(acceleration) > 0.3 || velocity > 6 || velocity < 3) {
+    if (Math.abs(acceleration) > 1.5 || velocity > 6 || velocity < 3) {
+      const alertType = acceleration > 2 ? 'surge' : acceleration > 0 ? 'spike' : 'drop';
       alerts.push({
-        id: `alert-${hour}`,
-        time: `${String(hour).padStart(2, '0')}:00`,
-        velocity,
-        acceleration,
-        mentions,
-        baseline,
-        signal,
-        trigger: velocity > 7 ? 'spike' : velocity < 3 ? 'drop' : 'normal',
+        time: new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour).toISOString(),
+        magnitude: Math.abs(acceleration),
+        type: alertType as 'spike' | 'surge' | 'drop',
+        previousVelocity,
+        currentVelocity: velocity,
       });
     }
+    previousVelocity = velocity;
   }
 
-  alerts.sort((a, b) => Math.abs(b.acceleration) - Math.abs(a.acceleration));
+  alerts.sort((a, b) => b.magnitude - a.magnitude);
 
   // Calculate current acceleration (last 3 hours vs their baselines)
   let recentActualSum = 0;

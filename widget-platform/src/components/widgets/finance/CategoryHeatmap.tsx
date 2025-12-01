@@ -115,7 +115,7 @@ function CategoryHeatmapContent({
           >
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-medium">{category.name}</h3>
-              <div className={`px-3 py-1 rounded-full text-xs font-medium ${getHeatColor(category.avgVelocity)}`}>
+              <div className={`px-3 py-1 rounded-full text-xs font-medium ${getHeatColor(category.avgVelocity)}`} suppressHydrationWarning>
                 Avg: {category.avgVelocity.toFixed(1)}
               </div>
             </div>
@@ -127,8 +127,8 @@ function CategoryHeatmapContent({
                   className={`${getHeatColor(ticker.velocity)} rounded-lg p-3 text-center transition-transform hover:scale-105`}
                 >
                   <div className="font-bold text-sm">{ticker.ticker}</div>
-                  <div className="text-lg font-bold">{ticker.velocity.toFixed(1)}</div>
-                  <div className="flex items-center justify-center gap-1 text-xs opacity-80">
+                  <div className="text-lg font-bold" suppressHydrationWarning>{ticker.velocity.toFixed(1)}</div>
+                  <div className="flex items-center justify-center gap-1 text-xs opacity-80" suppressHydrationWarning>
                     <TrendIcon trend={ticker.trend} />
                     <span>{ticker.mentions}</span>
                   </div>
@@ -152,7 +152,7 @@ function CategoryHeatmapContent({
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-1">
                       <span className="font-medium">{ticker.ticker}</span>
-                      <span className="text-sm">{ticker.velocity.toFixed(1)}</span>
+                      <span className="text-sm" suppressHydrationWarning>{ticker.velocity.toFixed(1)}</span>
                     </div>
                     <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
                       <div
@@ -161,7 +161,7 @@ function CategoryHeatmapContent({
                       />
                     </div>
                   </div>
-                  <div className="flex items-center gap-1 text-xs text-slate-400">
+                  <div className="flex items-center gap-1 text-xs text-slate-400" suppressHydrationWarning>
                     <TrendIcon trend={ticker.trend} />
                     <span>{ticker.mentions}</span>
                   </div>

@@ -116,7 +116,7 @@ function RisingTickersContent({
           </div>
         </div>
         <div className="text-right">
-          <div className="text-4xl font-bold text-orange-400">{totalDiscovered}</div>
+          <div className="text-4xl font-bold text-orange-400" suppressHydrationWarning>{totalDiscovered}</div>
           <div className="text-slate-400 text-sm">Discovered Today</div>
         </div>
       </div>
@@ -182,7 +182,7 @@ function RisingTickersContent({
               className="flex items-center gap-4 py-3 border-b border-slate-700 last:border-0"
             >
               <div className="w-8 text-slate-400 text-sm font-bold">#{i + 1}</div>
-              <div className={`w-12 h-12 rounded-lg ${getHeatColor(ticker.velocity)} flex items-center justify-center font-bold`}>
+              <div className={`w-12 h-12 rounded-lg ${getHeatColor(ticker.velocity)} flex items-center justify-center font-bold`} suppressHydrationWarning>
                 {ticker.velocity.toFixed(1)}
               </div>
               <div className="flex-1">
@@ -193,17 +193,17 @@ function RisingTickersContent({
                 <div className="text-sm text-slate-400">{ticker.name}</div>
               </div>
               <div className="text-right">
-                <div className="flex items-center gap-1 text-green-400 font-bold">
+                <div className="flex items-center gap-1 text-green-400 font-bold" suppressHydrationWarning>
                   <TrendingUp className="w-4 h-4" />
                   +{ticker.velocityChange.toFixed(0)}%
                 </div>
-                <div className="text-xs text-slate-400 flex items-center gap-1">
+                <div className="text-xs text-slate-400 flex items-center gap-1" suppressHydrationWarning>
                   <Clock className="w-3 h-3" />
                   {new Date(ticker.timeDiscovered).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-sm font-medium">{ticker.mentions}</div>
+                <div className="text-sm font-medium" suppressHydrationWarning>{ticker.mentions}</div>
                 <div className="text-xs text-slate-400">mentions</div>
               </div>
             </div>

@@ -149,7 +149,7 @@ function BasketBuilderContent({
           </div>
         </div>
         <div className="text-right">
-          <div className="text-4xl font-bold text-teal-400">{tickers.length}</div>
+          <div className="text-4xl font-bold text-teal-400" suppressHydrationWarning>{tickers.length}</div>
           <div className="text-slate-400 text-sm">Assets in Basket</div>
         </div>
       </div>
@@ -226,19 +226,19 @@ function BasketBuilderContent({
                 <div className="text-xs text-slate-400">{ticker.reason}</div>
               </div>
               <div className="text-center">
-                <div className="text-sm font-medium">{ticker.sentiment}</div>
+                <div className="text-sm font-medium" suppressHydrationWarning>{ticker.sentiment}</div>
                 <div className="text-xs text-slate-400">sentiment</div>
               </div>
               <div className="text-center">
-                <div className="text-sm font-medium">{ticker.velocity.toFixed(1)}</div>
+                <div className="text-sm font-medium" suppressHydrationWarning>{ticker.velocity.toFixed(1)}</div>
                 <div className="text-xs text-slate-400">velocity</div>
               </div>
               <div className="text-center">
-                <div className="text-sm font-medium">{ticker.mentions}</div>
+                <div className="text-sm font-medium" suppressHydrationWarning>{ticker.mentions}</div>
                 <div className="text-xs text-slate-400">mentions</div>
               </div>
               <div className="text-right">
-                <div className="text-lg font-bold text-teal-400">{ticker.score}</div>
+                <div className="text-lg font-bold text-teal-400" suppressHydrationWarning>{ticker.score}</div>
                 <div className="text-xs text-slate-400">score</div>
               </div>
             </div>

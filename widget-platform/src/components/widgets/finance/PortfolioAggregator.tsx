@@ -129,7 +129,7 @@ function PortfolioAggregatorContent({
           </div>
         </div>
         <div className="text-right">
-          <div className={`text-4xl font-bold ${getSentimentColor(overallSentiment)}`}>
+          <div className={`text-4xl font-bold ${getSentimentColor(overallSentiment)}`} suppressHydrationWarning>
             {overallSentiment}
           </div>
           <div className="text-slate-400 text-sm">Overall Sentiment</div>
@@ -210,13 +210,13 @@ function PortfolioAggregatorContent({
                   />
                 </div>
               </div>
-              <div className={`w-12 text-right font-bold ${getSentimentColor(ticker.sentiment)}`}>
+              <div className={`w-12 text-right font-bold ${getSentimentColor(ticker.sentiment)}`} suppressHydrationWarning>
                 {ticker.sentiment}
               </div>
-              <div className="w-16 text-right text-sm text-slate-400">
+              <div className="w-16 text-right text-sm text-slate-400" suppressHydrationWarning>
                 {ticker.velocity.toFixed(1)} vel
               </div>
-              <div className="w-20 text-right text-sm text-slate-400">
+              <div className="w-20 text-right text-sm text-slate-400" suppressHydrationWarning>
                 {ticker.mentions} mentions
               </div>
               <TrendIcon trend={ticker.trend} />

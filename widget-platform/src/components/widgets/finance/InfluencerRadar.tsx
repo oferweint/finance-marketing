@@ -118,7 +118,7 @@ function InfluencerRadarContent({
           </div>
         </div>
         <div className="text-right">
-          <div className="text-4xl font-bold text-cyan-400">{totalInfluencers}</div>
+          <div className="text-4xl font-bold text-cyan-400" suppressHydrationWarning>{totalInfluencers}</div>
           <div className="text-slate-400 text-sm">Influencers Found</div>
         </div>
       </div>
@@ -126,15 +126,15 @@ function InfluencerRadarContent({
       {/* Sentiment Summary */}
       <div className="grid grid-cols-3 gap-4 mb-6">
         <div className="bg-slate-800 rounded-lg p-4 text-center">
-          <div className="text-green-400 text-2xl font-bold">{sentimentCounts.bullish}</div>
+          <div className="text-green-400 text-2xl font-bold" suppressHydrationWarning>{sentimentCounts.bullish}</div>
           <div className="text-slate-400 text-xs">Bullish</div>
         </div>
         <div className="bg-slate-800 rounded-lg p-4 text-center">
-          <div className="text-gray-400 text-2xl font-bold">{sentimentCounts.neutral}</div>
+          <div className="text-gray-400 text-2xl font-bold" suppressHydrationWarning>{sentimentCounts.neutral}</div>
           <div className="text-slate-400 text-xs">Neutral</div>
         </div>
         <div className="bg-slate-800 rounded-lg p-4 text-center">
-          <div className="text-red-400 text-2xl font-bold">{sentimentCounts.bearish}</div>
+          <div className="text-red-400 text-2xl font-bold" suppressHydrationWarning>{sentimentCounts.bearish}</div>
           <div className="text-slate-400 text-xs">Bearish</div>
         </div>
       </div>
@@ -196,7 +196,7 @@ function InfluencerRadarContent({
                 </div>
                 <div className="text-xs text-slate-400">{inf.name}</div>
               </div>
-              <div className="flex items-center gap-4 text-sm">
+              <div className="flex items-center gap-4 text-sm" suppressHydrationWarning>
                 <div className="flex items-center gap-1 text-slate-400">
                   <Users className="w-3 h-3" />
                   {formatFollowers(inf.followers)}
@@ -211,7 +211,7 @@ function InfluencerRadarContent({
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-cyan-400 font-bold">{inf.influenceScore}</div>
+                <div className="text-cyan-400 font-bold" suppressHydrationWarning>{inf.influenceScore}</div>
                 <div className="text-xs text-slate-400">score</div>
               </div>
             </div>

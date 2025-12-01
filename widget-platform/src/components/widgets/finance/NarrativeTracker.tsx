@@ -160,7 +160,7 @@ function NarrativeTrackerContent({
           <div className={`text-4xl font-bold ${
             dominantSentiment === 'bullish' ? 'text-green-400' :
             dominantSentiment === 'bearish' ? 'text-red-400' : 'text-gray-400'
-          }`}>
+          }`} suppressHydrationWarning>
             {narrativeBalance}%
           </div>
           <div className="text-slate-400 text-sm capitalize">{dominantSentiment}</div>
@@ -170,15 +170,15 @@ function NarrativeTrackerContent({
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4 mb-6">
         <div className="bg-slate-800 rounded-lg p-4 text-center">
-          <div className="text-2xl font-bold text-green-400">{bullishNarratives.length}</div>
+          <div className="text-2xl font-bold text-green-400" suppressHydrationWarning>{bullishNarratives.length}</div>
           <div className="text-slate-400 text-xs">Bull Narratives</div>
         </div>
         <div className="bg-slate-800 rounded-lg p-4 text-center">
-          <div className="text-2xl font-bold text-red-400">{bearishNarratives.length}</div>
+          <div className="text-2xl font-bold text-red-400" suppressHydrationWarning>{bearishNarratives.length}</div>
           <div className="text-slate-400 text-xs">Bear Narratives</div>
         </div>
         <div className="bg-slate-800 rounded-lg p-4 text-center">
-          <div className="text-2xl font-bold text-indigo-400">{totalNarratives}</div>
+          <div className="text-2xl font-bold text-indigo-400" suppressHydrationWarning>{totalNarratives}</div>
           <div className="text-slate-400 text-xs">Total Tracked</div>
         </div>
       </div>
@@ -280,11 +280,11 @@ function NarrativeTrackerContent({
                 </div>
                 <div className={`text-lg font-bold ${
                   narrative.sentiment === 'bullish' ? 'text-green-400' : 'text-red-400'
-                }`}>
+                }`} suppressHydrationWarning>
                   {narrative.strength}
                 </div>
               </div>
-              <div className="flex items-center gap-4 text-xs text-slate-400">
+              <div className="flex items-center gap-4 text-xs text-slate-400" suppressHydrationWarning>
                 <span>{narrative.mentions} mentions</span>
                 <span className="flex items-center gap-1">
                   <Users className="w-3 h-3" />

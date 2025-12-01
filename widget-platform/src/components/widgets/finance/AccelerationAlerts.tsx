@@ -177,16 +177,16 @@ function AccelerationAlertsContent({
                 }`} />
                 <div>
                   <div className="text-sm font-medium capitalize">{alert.type}</div>
-                  <div className="text-xs text-slate-400">
+                  <div className="text-xs text-slate-400" suppressHydrationWarning>
                     {new Date(alert.time).toLocaleTimeString()}
                   </div>
                 </div>
               </div>
               <div className="text-right">
-                <div className={`font-bold ${alert.type === 'drop' ? 'text-blue-400' : 'text-orange-400'}`}>
+                <div className={`font-bold ${alert.type === 'drop' ? 'text-blue-400' : 'text-orange-400'}`} suppressHydrationWarning>
                   {alert.type === 'drop' ? '-' : '+'}{alert.magnitude.toFixed(1)}
                 </div>
-                <div className="text-xs text-slate-400">
+                <div className="text-xs text-slate-400" suppressHydrationWarning>
                   {alert.previousVelocity.toFixed(1)} → {alert.currentVelocity.toFixed(1)}
                 </div>
               </div>
