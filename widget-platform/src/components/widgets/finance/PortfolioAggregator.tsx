@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   RadarChart,
   PolarGrid,
@@ -16,13 +16,10 @@ import {
   CartesianGrid,
   Cell,
 } from 'recharts';
-import { Briefcase, TrendingUp, TrendingDown, Activity } from 'lucide-react';
-import { WidgetWrapper } from '../WidgetWrapper';
+import { Briefcase, TrendingUp, TrendingDown, Activity, ChevronDown } from 'lucide-react';
 import { chartConfig, CHART_COLORS } from '@/lib/theme';
 
 interface PortfolioAggregatorProps {
-  ticker?: string;
-  tickers?: string;
   autoRefresh?: boolean;
 }
 
@@ -35,6 +32,7 @@ interface TickerSentiment {
 }
 
 interface PortfolioData {
+  portfolioName: string;
   tickers: TickerSentiment[];
   overallSentiment: number;
   averageVelocity: number;
@@ -42,35 +40,40 @@ interface PortfolioData {
   generatedAt: string;
 }
 
-const generateMockData = (tickerString: string): PortfolioData => {
-  const now = new Date();
-  const tickerList = tickerString.split(',').map(t => t.trim().toUpperCase()).filter(Boolean);
-
-  const tickers: TickerSentiment[] = tickerList.map((ticker) => {
-    const sentiment = Math.round(30 + Math.random() * 40);
-    const velocity = 3 + Math.random() * 5;
-    return {
-      ticker,
-      sentiment,
-      velocity,
-      mentions: Math.round(50 + Math.random() * 300),
-      trend: sentiment > 55 ? 'up' : sentiment < 45 ? 'down' : 'neutral',
-    };
-  });
-
-  const overallSentiment = Math.round(
-    tickers.reduce((sum, t) => sum + t.sentiment, 0) / tickers.length
-  );
-  const averageVelocity = tickers.reduce((sum, t) => sum + t.velocity, 0) / tickers.length;
-  const totalMentions = tickers.reduce((sum, t) => sum + t.mentions, 0);
-
-  return {
-    tickers,
-    overallSentiment,
-    averageVelocity,
-    totalMentions,
-    generatedAt: now.toISOString(),
-  };
+// Predefined portfolios
+const PORTFOLIOS: Record<string, { name: string; tickers: string[] }> = {
+  'magnificent-7': {
+    name: 'Magnificent 7',
+    tickers: ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'META', 'TSLA'],
+  },
+  'sp-top-10': {
+    name: 'S&P Top 10',
+    tickers: ['AAPL', 'MSFT', 'NVDA', 'AMZN', 'GOOGL', 'META', 'TSLA', 'JPM', 'UNH', 'V'],
+  },
+  'ai-leaders': {
+    name: 'AI Leaders',
+    tickers: ['NVDA', 'MSFT', 'GOOGL', 'AMD', 'META', 'PLTR', 'AMZN', 'CRM'],
+  },
+  'crypto-plays': {
+    name: 'Crypto Plays',
+    tickers: ['BTC', 'ETH', 'SOL', 'COIN', 'MSTR', 'RIOT'],
+  },
+  'ev-revolution': {
+    name: 'EV Revolution',
+    tickers: ['TSLA', 'RIVN', 'LCID', 'NIO', 'F', 'GM'],
+  },
+  'big-tech': {
+    name: 'Big Tech',
+    tickers: ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'META'],
+  },
+  'fintech': {
+    name: 'Fintech',
+    tickers: ['SQ', 'PYPL', 'COIN', 'SOFI', 'V', 'MA'],
+  },
+  'semiconductors': {
+    name: 'Semiconductors',
+    tickers: ['NVDA', 'AMD', 'INTC', 'TSM', 'AVGO', 'QCOM'],
+  },
 };
 
 function getSentimentColor(sentiment: number): string {
@@ -87,6 +90,17 @@ function PortfolioAggregatorContent({
   data: PortfolioData | null;
   isLoading: boolean;
 }) {
+  if (isLoading) {
+    return (
+      <div className="h-96 flex items-center justify-center text-slate-400">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-400 mx-auto mb-4"></div>
+          <p>Loading portfolio data...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!data) {
     return (
       <div className="h-96 flex items-center justify-center text-slate-400">
@@ -110,32 +124,13 @@ function PortfolioAggregatorContent({
   }));
 
   const TrendIcon = ({ trend }: { trend: string }) => {
-    if (trend === 'up') return <TrendingUp className="w-4 h-4 text-green-400" />;
-    if (trend === 'down') return <TrendingDown className="w-4 h-4 text-red-400" />;
-    return <Activity className="w-4 h-4 text-gray-400" />;
+    if (trend === 'up') return <span suppressHydrationWarning><TrendingUp className="w-4 h-4 text-green-400" /></span>;
+    if (trend === 'down') return <span suppressHydrationWarning><TrendingDown className="w-4 h-4 text-red-400" /></span>;
+    return <span suppressHydrationWarning><Activity className="w-4 h-4 text-gray-400" /></span>;
   };
 
   return (
-    <div className="pt-8">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <Briefcase className="w-8 h-8 text-emerald-400" />
-          <div>
-            <h1 className="text-2xl font-bold">Portfolio Aggregator</h1>
-            <p className="text-slate-400 text-sm">
-              Sentiment across {tickers.length} holdings
-            </p>
-          </div>
-        </div>
-        <div className="text-right">
-          <div className={`text-4xl font-bold ${getSentimentColor(overallSentiment)}`} suppressHydrationWarning>
-            {overallSentiment}
-          </div>
-          <div className="text-slate-400 text-sm">Overall Sentiment</div>
-        </div>
-      </div>
-
+    <>
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4 mb-6">
         <div className="bg-slate-800 rounded-lg p-4 text-center">
@@ -203,10 +198,11 @@ function PortfolioAggregatorContent({
             <div key={ticker.ticker} className="flex items-center gap-4 py-2 border-b border-slate-700 last:border-0">
               <div className="w-16 font-bold">{ticker.ticker}</div>
               <div className="flex-1">
-                <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+                <div className="h-2 bg-slate-700 rounded-full overflow-hidden" suppressHydrationWarning>
                   <div
                     className={`h-full ${ticker.sentiment >= 50 ? 'bg-green-500' : 'bg-red-500'}`}
                     style={{ width: `${ticker.sentiment}%` }}
+                    suppressHydrationWarning
                   />
                 </div>
               </div>
@@ -217,30 +213,122 @@ function PortfolioAggregatorContent({
                 {ticker.velocity.toFixed(1)} vel
               </div>
               <div className="w-20 text-right text-sm text-slate-400" suppressHydrationWarning>
-                {ticker.mentions} mentions
+                <span suppressHydrationWarning>{ticker.mentions}</span> mentions
               </div>
               <TrendIcon trend={ticker.trend} />
             </div>
           ))}
         </div>
       </div>
-    </div>
+    </>
   );
 }
 
-export function PortfolioAggregator({ tickers = 'TSLA,NVDA,AAPL,MSFT', autoRefresh }: PortfolioAggregatorProps) {
+export function PortfolioAggregator({ autoRefresh }: PortfolioAggregatorProps) {
+  const [selectedPortfolio, setSelectedPortfolio] = useState('magnificent-7');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [data, setData] = useState<PortfolioData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const currentPortfolio = PORTFOLIOS[selectedPortfolio];
+
+  // Fetch data when portfolio changes
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        const tickers = currentPortfolio.tickers.join(',');
+        const response = await fetch(
+          `/api/widgets/finance/portfolio-aggregator?portfolio=${selectedPortfolio}&tickers=${tickers}`
+        );
+        const result = await response.json();
+        if (result.success) {
+          setData({
+            ...result.data,
+            portfolioName: currentPortfolio.name,
+          });
+        }
+      } catch (error) {
+        console.error('Failed to fetch portfolio data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+
+    // Auto-refresh if enabled
+    if (autoRefresh) {
+      const interval = setInterval(fetchData, 60000);
+      return () => clearInterval(interval);
+    }
+  }, [selectedPortfolio, currentPortfolio, autoRefresh]);
+
+  const overallSentiment = data?.overallSentiment ?? 50;
+
   return (
-    <WidgetWrapper
-      category="finance"
-      widget="portfolio-aggregator"
-      autoRefresh={autoRefresh}
-    >
-      {(rawData, isLoading) => {
-        const apiResponse = rawData as { success: boolean; data: PortfolioData } | null;
-        const data = apiResponse?.data || generateMockData(tickers);
-        return <PortfolioAggregatorContent data={data} isLoading={isLoading} />;
-      }}
-    </WidgetWrapper>
+    <div className="pt-8">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <Briefcase className="w-8 h-8 text-emerald-400" />
+          <div>
+            <h1 className="text-2xl font-bold">Portfolio Monitor</h1>
+            <p className="text-slate-400 text-sm">
+              Social sentiment across holdings
+            </p>
+          </div>
+        </div>
+        <div className="text-right">
+          <div className={`text-4xl font-bold ${getSentimentColor(overallSentiment)}`} suppressHydrationWarning>
+            {overallSentiment}
+          </div>
+          <div className="text-slate-400 text-sm">Overall Sentiment</div>
+        </div>
+      </div>
+
+      {/* Portfolio Selector */}
+      <div className="mb-6 relative">
+        <button
+          onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+          className="w-full bg-slate-800 rounded-lg p-4 flex items-center justify-between hover:bg-slate-750 transition-colors"
+        >
+          <div>
+            <div className="text-xs text-slate-400 mb-1">Selected Portfolio</div>
+            <div className="text-lg font-medium">{currentPortfolio.name}</div>
+            <div className="text-xs text-slate-500 mt-1">
+              {currentPortfolio.tickers.join(', ')}
+            </div>
+          </div>
+          <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+        </button>
+
+        {isDropdownOpen && (
+          <div className="absolute z-10 w-full mt-2 bg-slate-800 rounded-lg shadow-xl border border-slate-700 max-h-80 overflow-y-auto">
+            {Object.entries(PORTFOLIOS).map(([key, portfolio]) => (
+              <button
+                key={key}
+                onClick={() => {
+                  setSelectedPortfolio(key);
+                  setIsDropdownOpen(false);
+                }}
+                className={`w-full p-4 text-left hover:bg-slate-700 transition-colors border-b border-slate-700 last:border-0 ${
+                  selectedPortfolio === key ? 'bg-slate-700' : ''
+                }`}
+              >
+                <div className="font-medium">{portfolio.name}</div>
+                <div className="text-xs text-slate-400 mt-1">
+                  {portfolio.tickers.join(', ')}
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Content */}
+      <PortfolioAggregatorContent data={data} isLoading={isLoading} />
+    </div>
   );
 }
 

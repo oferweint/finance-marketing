@@ -207,8 +207,9 @@ export function AccelerationAlerts({ ticker = 'NVDA', autoRefresh }: Acceleratio
       autoRefresh={autoRefresh}
     >
       {(rawData, isLoading) => {
+        // Don't use generateMockData() - causes hydration errors due to new Date()
         const apiResponse = rawData as { success: boolean; data: AccelerationAlertsData } | null;
-        const data = apiResponse?.data || generateMockData(ticker);
+        const data = apiResponse?.data || null;
         return <AccelerationAlertsContent data={data} isLoading={isLoading} />;
       }}
     </WidgetWrapper>

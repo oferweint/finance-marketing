@@ -251,8 +251,9 @@ export function DivergenceDetector({ ticker = 'TSLA', autoRefresh }: DivergenceD
       autoRefresh={autoRefresh}
     >
       {(rawData, isLoading) => {
+        // Don't use generateMockData() - causes hydration errors due to Math.random()
         const apiResponse = rawData as { success: boolean; data: DivergenceData } | null;
-        const data = apiResponse?.data || generateMockData(ticker);
+        const data = apiResponse?.data || null;
         return <DivergenceDetectorContent data={data} isLoading={isLoading} />;
       }}
     </WidgetWrapper>

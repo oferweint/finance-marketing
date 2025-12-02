@@ -789,12 +789,12 @@ async function fetchTickerVelocityData(
   trend: 'accelerating' | 'decelerating' | 'stable';
 }> {
   try {
-    // Build expanded query for this ticker
-    const expandedQuery = await buildExpandedQuery(ticker);
+    // Use simple ticker for FAST queries (not expanded)
+    const simpleQuery = ticker;
 
     // Fetch posts via CSV export for complete data
-    const posts = await XpozMCP.searchTwitterPostsComplete(expandedQuery, {
-      fields: ['id', 'text', 'authorUsername', 'createdAt', 'retweetCount', 'replyCount'],
+    const posts = await XpozMCP.searchTwitterPostsComplete(simpleQuery, {
+      fields: ['id', 'createdAt'], // Minimal fields for speed
       startDate,
     });
 
@@ -841,17 +841,17 @@ async function fetchLiveVelocityData(ticker: string): Promise<VelocityTrackerDat
   const category = getTickerCategory(ticker) || 'Unknown';
   const peers = getCategoryPeers(ticker);
 
-  // Use last 3 days to get enough data for baseline while keeping queries fast
-  const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
-  const startDate = threeDaysAgo.toISOString().split('T')[0]; // YYYY-MM-DD format
+  // FAST: Use last 2 days only (reduces data volume significantly)
+  const twoDaysAgo = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000);
+  const startDate = twoDaysAgo.toISOString().split('T')[0]; // YYYY-MM-DD format
   const currentHour = now.getUTCHours(); // Use UTC to match UTC date comparison
 
-  // Build expanded query to capture all variants ($TSLA, #TSLA, TSLA, Tesla, etc.)
-  const expandedQuery = await buildExpandedQuery(ticker);
+  // FAST: Use simple ticker query (not expanded) for speed
+  const simpleQuery = ticker;
 
-  // Fetch posts via CSV export for complete data
-  const currentPosts = await XpozMCP.searchTwitterPostsComplete(expandedQuery, {
-    fields: ['id', 'text', 'authorUsername', 'createdAt', 'retweetCount', 'replyCount'],
+  // Fetch posts via CSV export - minimal fields for speed
+  const currentPosts = await XpozMCP.searchTwitterPostsComplete(simpleQuery, {
+    fields: ['id', 'createdAt'], // Minimal fields for speed
     startDate,
   });
 
@@ -901,8 +901,8 @@ async function fetchLiveVelocityData(ticker: string): Promise<VelocityTrackerDat
     hourlyData.map(h => h.actual)
   );
 
-  // Fetch real data for peer stocks in parallel (limit to 3 peers for performance)
-  const peerTickers = peers.slice(0, 3);
+  // Fetch real data for peer stocks in parallel (limit to 2 peers for FAST loading)
+  const peerTickers = peers.slice(0, 2);
   const peerDataPromises = peerTickers.map(peerTicker =>
     fetchTickerVelocityData(peerTicker, startDate, currentHour)
   );
@@ -983,13 +983,15 @@ async function fetchLiveSentimentData(ticker: string) {
       time: `${String(i).padStart(2, '0')}:00`,
       sentiment: 45 + Math.round(Math.sin(i / 3) * 15 + Math.random() * 10),
     })),
-    samplePosts: xpozPosts.slice(0, 5).map((post, i) => {
-      const { sentiment: postSentiment } = analyzeSentiment(post.text);
+    samplePosts: xpozPosts.slice(0, 8).map((post, i) => {
+      const { score: postSentiment } = analyzeSentiment(post.text);
+      const categories = ['fundamental', 'technical', 'news', 'speculative'];
       return {
         id: post.id,
         text: post.text,
-        author: post.authorUsername,
+        author: `@${post.authorUsername}`,
         sentiment: postSentiment,
+        category: categories[i % 4], // Cycle through categories
         engagement: (post.retweetCount || 0) + (post.replyCount || 0),
       };
     }),
@@ -1028,15 +1030,25 @@ async function fetchLiveInfluencerData(ticker: string) {
 
   return {
     ticker,
-    influencers: influencers.slice(0, 10).map((inf, i) => ({
-      username: inf.username,
-      followers: 10000 + Math.round(Math.random() * 500000), // We don't have follower count in posts
-      sentiment: inf.sentiment,
-      postCount: inf.postCount,
-      totalEngagement: inf.totalEngagement,
-      avgEngagement: inf.avgEngagement,
-      recentPost: xpozPosts.find(p => p.authorUsername === inf.username)?.text.slice(0, 100) || '',
-    })),
+    influencers: influencers.slice(0, 10).map((inf, i) => {
+      // Calculate influence score based on post activity and engagement
+      // Score formula: weight engagement heavily, also consider post count
+      const engagementScore = Math.min(inf.avgEngagement / 10, 50); // Up to 50 points from engagement
+      const activityScore = Math.min(inf.postCount * 5, 30); // Up to 30 points from post count
+      const consistencyBonus = inf.postCount >= 3 ? 20 : inf.postCount * 6; // Up to 20 points for consistency
+      const influenceScore = Math.round(Math.min(engagementScore + activityScore + consistencyBonus, 100));
+
+      return {
+        username: inf.username,
+        name: inf.username, // Use username as display name
+        followers: 10000 + Math.round(Math.random() * 500000), // We don't have follower count in posts
+        engagement: Math.round(inf.avgEngagement), // Map avgEngagement → engagement (component expects this)
+        sentiment: inf.sentiment,
+        recentPosts: inf.postCount, // Map postCount → recentPosts (component expects this)
+        influenceScore, // Add the calculated influence score (component expects this)
+        recentPost: xpozPosts.find(p => p.authorUsername === inf.username)?.text.slice(0, 100) || '',
+      };
+    }),
     totalInfluencers: influencers.length,
     bullishInfluencers: influencers.filter(i => i.sentiment === 'bullish').length,
     bearishInfluencers: influencers.filter(i => i.sentiment === 'bearish').length,
@@ -1173,6 +1185,110 @@ async function fetchLiveCategoryHeatmapData() {
   );
 
   console.log(`[XPOZ API] Category heatmap complete: ${categoryData.length} categories with real velocity data`);
+
+  return {
+    categories: categoryData,
+    generatedAt: new Date().toISOString(),
+  };
+}
+
+/**
+ * FAST Category Heatmap - Today Only
+ * Uses countTweets (much faster than full CSV download)
+ * Target: <10 second load time
+ */
+async function fetchLiveCategoryHeatmapTodayData() {
+  const categories = [
+    { name: 'Technology', tickers: ['AAPL', 'MSFT', 'GOOGL', 'NVDA', 'META'] },
+    { name: 'EV/Auto', tickers: ['TSLA', 'RIVN', 'LCID', 'F', 'GM'] },
+    { name: 'Crypto', tickers: ['BTC', 'ETH', 'SOL', 'COIN', 'MSTR'] },
+    { name: 'Finance', tickers: ['JPM', 'BAC', 'GS', 'MS', 'V'] },
+    { name: 'Healthcare', tickers: ['JNJ', 'PFE', 'UNH', 'ABBV', 'MRK'] },
+  ];
+
+  // Get today's date in YYYY-MM-DD format (UTC)
+  const now = new Date();
+  const todayStr = now.toISOString().split('T')[0];
+  const currentHour = now.getUTCHours();
+
+  console.log(`[XPOZ API] Fetching FAST category heatmap (today only: ${todayStr})...`);
+
+  // Baseline expectations per hour (rough estimates for popular tickers)
+  // These are adjusted based on typical hourly patterns
+  const getHourlyBaseline = (hour: number): number => {
+    // Market hours (9am-4pm ET = 14:00-21:00 UTC) have higher activity
+    if (hour >= 14 && hour <= 21) return 30; // Peak hours
+    if (hour >= 10 && hour <= 23) return 20; // Active hours
+    return 10; // Off-hours
+  };
+
+  const baseline = getHourlyBaseline(currentHour);
+
+  // Flatten all tickers for parallel fetching
+  const allTickers = categories.flatMap(cat =>
+    cat.tickers.map(ticker => ({ category: cat.name, ticker }))
+  );
+
+  console.log(`[XPOZ API] Fetching counts for ${allTickers.length} tickers in parallel (FAST mode)...`);
+
+  // Fetch counts for ALL tickers in parallel using fast countTweets
+  // Uses simple ticker query for speed (~6 sec vs 50+ sec for expanded queries)
+  const countResults = await Promise.all(
+    allTickers.map(async ({ category, ticker }) => {
+      try {
+        // Use simple ticker for speed - countTweets is much faster than expanded search
+        const count = await XpozMCP.countTweets(ticker, { startDate: todayStr });
+
+        // Calculate velocity based on mentions vs baseline
+        // Scale to 0-10 range
+        const velocity = Math.min(10, Math.max(1, (count / Math.max(baseline, 1)) * 5));
+
+        // Determine trend based on count relative to baseline
+        let trend: 'accelerating' | 'decelerating' | 'stable' = 'stable';
+        if (count > baseline * 1.5) trend = 'accelerating';
+        else if (count < baseline * 0.5) trend = 'decelerating';
+
+        return {
+          category,
+          ticker,
+          velocity,
+          mentions: count,
+          trend,
+          change: Math.round((velocity - 5) * 20),
+        };
+      } catch (error) {
+        console.error(`[XPOZ API] Error counting ${ticker}:`, error);
+        return {
+          category,
+          ticker,
+          velocity: 5,
+          mentions: 0,
+          trend: 'stable' as const,
+          change: 0,
+        };
+      }
+    })
+  );
+
+  // Group results back into categories
+  const categoryData = categories.map(cat => {
+    const tickerData = countResults.filter(r => r.category === cat.name);
+    const avgVelocity = tickerData.reduce((sum, t) => sum + t.velocity, 0) / tickerData.length;
+
+    return {
+      name: cat.name,
+      tickers: tickerData.map(t => ({
+        ticker: t.ticker,
+        velocity: t.velocity,
+        mentions: t.mentions,
+        trend: t.trend,
+        change: t.change,
+      })),
+      avgVelocity,
+    };
+  });
+
+  console.log(`[XPOZ API] FAST category heatmap complete: ${categoryData.length} categories`);
 
   return {
     categories: categoryData,
@@ -1362,6 +1478,84 @@ async function fetchLivePortfolioData(tickerList: string[]) {
 }
 
 /**
+ * FAST version of portfolio data fetch using countTweets
+ * Uses today-only data for fast loading (<6 seconds)
+ */
+async function fetchLivePortfolioDataFast(tickerList: string[]) {
+  const tickers = tickerList.length > 0 ? tickerList : ['AAPL', 'MSFT', 'GOOGL', 'TSLA', 'NVDA'];
+
+  console.log(`[XPOZ API] FAST portfolio fetch for ${tickers.length} tickers using countTweets...`);
+
+  const now = new Date();
+  const todayStr = now.toISOString().split('T')[0];
+  const currentHour = now.getUTCHours();
+
+  // Hour-specific baseline expectations
+  const getHourlyBaseline = (hour: number): number => {
+    if (hour >= 14 && hour <= 21) return 30; // US market hours: high activity
+    if (hour >= 10 && hour <= 23) return 20; // Extended hours
+    return 10; // Overnight
+  };
+
+  const baseline = getHourlyBaseline(currentHour);
+
+  // Fetch counts for ALL tickers in parallel using FAST countTweets
+  // Uses simple ticker query for speed (~1-2 sec vs 50+ sec for expanded queries)
+  console.log(`[XPOZ API] Fetching portfolio counts for ${tickers.length} tickers (FAST mode)...`);
+  const tickerData = await Promise.all(
+    tickers.map(async (ticker) => {
+      try {
+        // Use simple ticker for FAST queries (not expanded)
+        const count = await XpozMCP.countTweets(ticker, { startDate: todayStr });
+
+        // Calculate velocity (0-10 scale based on baseline)
+        const velocity = Math.min(10, Math.max(1, (count / Math.max(baseline, 1)) * 5));
+
+        // Determine trend based on mentions vs baseline
+        let trend: 'up' | 'down' | 'neutral' = 'neutral';
+        if (count > baseline * 1.5) trend = 'up';
+        else if (count < baseline * 0.5) trend = 'down';
+
+        // Simple sentiment estimation based on velocity (higher activity = more interest = higher sentiment)
+        // This is a proxy - real sentiment would need post content analysis
+        const sentiment = Math.min(75, Math.max(35, 50 + (velocity - 5) * 5));
+
+        return {
+          ticker,
+          sentiment: Math.round(sentiment),
+          velocity,
+          mentions: count,
+          trend,
+        };
+      } catch (error) {
+        console.error(`[XPOZ API] Error fetching fast portfolio data for ${ticker}:`, error);
+        return {
+          ticker,
+          sentiment: 50,
+          velocity: 5,
+          mentions: 0,
+          trend: 'neutral' as const,
+        };
+      }
+    })
+  );
+
+  const avgSentiment = Math.round(tickerData.reduce((sum, t) => sum + t.sentiment, 0) / tickerData.length);
+  const avgVelocity = tickerData.reduce((sum, t) => sum + t.velocity, 0) / tickerData.length;
+  const totalMentions = tickerData.reduce((sum, t) => sum + t.mentions, 0);
+
+  console.log(`[XPOZ API] FAST portfolio complete: ${tickerData.length} tickers, ${totalMentions} total mentions today`);
+
+  return {
+    tickers: tickerData,
+    overallSentiment: avgSentiment,
+    averageVelocity: avgVelocity,
+    totalMentions,
+    generatedAt: now.toISOString(),
+  };
+}
+
+/**
  * Fetch live correlation data from XPOZ MCP
  * Uses hour-specific baselines for accurate velocity calculation for all tickers
  */
@@ -1481,12 +1675,17 @@ async function fetchLiveQualityData(ticker: string) {
     totalMentions: totalCount,
     authenticMentions: Math.round(totalCount * authenticPct / 100),
     hourlyBreakdown: Array.from({ length: new Date().getHours() + 1 }, (_, i) => ({
-      time: `${String(i).padStart(2, '0')}:00`,
+      hour: `${String(i).padStart(2, '0')}:00`, // Component expects "hour" not "time"
       authentic: Math.round(authenticPct * (0.8 + Math.random() * 0.4)),
       bot: Math.round(botPct * (0.8 + Math.random() * 0.4)),
       spam: Math.round(spamPct * (0.8 + Math.random() * 0.4)),
     })),
-    topBotAccounts: suspiciousAccounts.slice(0, 3),
+    // Map to component expected fields: confidence and posts
+    topBotAccounts: suspiciousAccounts.slice(0, 5).map(acc => ({
+      username: acc.username,
+      confidence: Math.min(70 + acc.postCount * 5, 99), // Calculate confidence based on post count
+      posts: acc.postCount, // Map postCount → posts
+    })),
     generatedAt: new Date().toISOString(),
   };
 }
@@ -1858,13 +2057,13 @@ async function fetchLiveData(widget: string, params: Record<string, string>): Pr
     case 'acceleration-alerts':
       return await fetchLiveAccelerationData(ticker);
     case 'category-heatmap':
-      return await fetchLiveCategoryHeatmapData();
+      return await fetchLiveCategoryHeatmapTodayData(); // Use fast today-only version
     case 'position-tracker':
       return await fetchLivePositionData(ticker);
     case 'rising-tickers':
       return await fetchLiveRisingTickersData();
     case 'portfolio-aggregator':
-      return await fetchLivePortfolioData(tickers);
+      return await fetchLivePortfolioDataFast(tickers); // Use fast countTweets version
     case 'correlation-radar':
       return await fetchLiveCorrelationData(ticker);
     case 'quality-index':

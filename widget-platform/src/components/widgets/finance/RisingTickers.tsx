@@ -222,8 +222,9 @@ export function RisingTickers({ ticker, category, autoRefresh }: RisingTickersPr
       autoRefresh={autoRefresh}
     >
       {(rawData, isLoading) => {
+        // Don't use generateMockData() - causes hydration errors due to Math.random()
         const apiResponse = rawData as { success: boolean; data: RisingTickersData } | null;
-        const data = apiResponse?.data || generateMockData();
+        const data = apiResponse?.data || null;
         return <RisingTickersContent data={data} isLoading={isLoading} />;
       }}
     </WidgetWrapper>

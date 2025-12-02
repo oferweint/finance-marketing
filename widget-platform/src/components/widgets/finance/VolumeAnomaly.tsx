@@ -270,8 +270,9 @@ export function VolumeAnomaly({ ticker = 'COIN', autoRefresh }: VolumeAnomalyPro
       autoRefresh={autoRefresh}
     >
       {(rawData, isLoading) => {
+        // Don't use generateMockData() - causes hydration errors due to Math.random()
         const apiResponse = rawData as { success: boolean; data: VolumeAnomalyData } | null;
-        const data = apiResponse?.data || generateMockData(ticker);
+        const data = apiResponse?.data || null;
         return <VolumeAnomalyContent data={data} isLoading={isLoading} />;
       }}
     </WidgetWrapper>

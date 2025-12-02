@@ -263,8 +263,9 @@ export function QualityIndex({ ticker = 'DOGE', autoRefresh }: QualityIndexProps
       autoRefresh={autoRefresh}
     >
       {(rawData, isLoading) => {
+        // Don't use generateMockData() - causes hydration errors due to Math.random()
         const apiResponse = rawData as { success: boolean; data: QualityData } | null;
-        const data = apiResponse?.data || generateMockData(ticker);
+        const data = apiResponse?.data || null;
         return <QualityIndexContent data={data} isLoading={isLoading} />;
       }}
     </WidgetWrapper>

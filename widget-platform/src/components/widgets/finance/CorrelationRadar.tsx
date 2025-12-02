@@ -242,8 +242,9 @@ export function CorrelationRadar({ ticker = 'BTC', autoRefresh }: CorrelationRad
       autoRefresh={autoRefresh}
     >
       {(rawData, isLoading) => {
+        // Don't use generateMockData() - causes hydration errors due to Math.random()
         const apiResponse = rawData as { success: boolean; data: CorrelationData } | null;
-        const data = apiResponse?.data || generateMockData(ticker);
+        const data = apiResponse?.data || null;
         return <CorrelationRadarContent data={data} isLoading={isLoading} />;
       }}
     </WidgetWrapper>

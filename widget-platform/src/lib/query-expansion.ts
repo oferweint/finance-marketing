@@ -221,9 +221,13 @@ export async function buildExpandedQuery(ticker: string | null): Promise<string>
     normalizedTicker,
   ];
 
-  // Add company names
+  // Add company names and hashtags (API is case-insensitive)
   for (const name of companyNames || []) {
     parts.push(name);
+    // Add hashtag version for single-word names (e.g., #Tesla, #Bitcoin)
+    if (!name.includes(' ')) {
+      parts.push(`#${name}`);
+    }
   }
 
   return parts.join(' OR ');

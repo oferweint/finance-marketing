@@ -77,9 +77,9 @@ function CategoryHeatmapContent({
   const { categories = [] } = data;
 
   const TrendIcon = ({ trend }: { trend: Trend }) => {
-    if (trend === 'accelerating') return <TrendingUp className="w-3 h-3 text-green-400" />;
-    if (trend === 'decelerating') return <TrendingDown className="w-3 h-3 text-red-400" />;
-    return <Minus className="w-3 h-3 text-gray-400" />;
+    if (trend === 'accelerating') return <span suppressHydrationWarning><TrendingUp className="w-3 h-3 text-green-400" /></span>;
+    if (trend === 'decelerating') return <span suppressHydrationWarning><TrendingDown className="w-3 h-3 text-red-400" /></span>;
+    return <span suppressHydrationWarning><Minus className="w-3 h-3 text-gray-400" /></span>;
   };
 
   const selectedCategoryData = selectedCategory
@@ -93,9 +93,9 @@ function CategoryHeatmapContent({
         <div className="flex items-center gap-3">
           <Grid className="w-8 h-8 text-purple-400" />
           <div>
-            <h1 className="text-2xl font-bold">Category Heatmap</h1>
+            <h1 className="text-2xl font-bold">Category Heatmap Today</h1>
             <p className="text-slate-400 text-sm">
-              Social velocity across market sectors
+              Today's social velocity across market sectors
             </p>
           </div>
         </div>
@@ -112,6 +112,7 @@ function CategoryHeatmapContent({
             onClick={() => setSelectedCategory(
               selectedCategory === category.name ? null : category.name
             )}
+            suppressHydrationWarning
           >
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-medium">{category.name}</h3>
@@ -120,17 +121,18 @@ function CategoryHeatmapContent({
               </div>
             </div>
 
-            <div className="grid grid-cols-5 gap-2">
+            <div className="grid grid-cols-5 gap-2" suppressHydrationWarning>
               {category.tickers.map((ticker) => (
                 <div
                   key={ticker.ticker}
                   className={`${getHeatColor(ticker.velocity)} rounded-lg p-3 text-center transition-transform hover:scale-105`}
+                  suppressHydrationWarning
                 >
                   <div className="font-bold text-sm">{ticker.ticker}</div>
                   <div className="text-lg font-bold" suppressHydrationWarning>{ticker.velocity.toFixed(1)}</div>
                   <div className="flex items-center justify-center gap-1 text-xs opacity-80" suppressHydrationWarning>
                     <TrendIcon trend={ticker.trend} />
-                    <span>{ticker.mentions}</span>
+                    <span suppressHydrationWarning>{ticker.mentions}</span>
                   </div>
                 </div>
               ))}
@@ -154,16 +156,17 @@ function CategoryHeatmapContent({
                       <span className="font-medium">{ticker.ticker}</span>
                       <span className="text-sm" suppressHydrationWarning>{ticker.velocity.toFixed(1)}</span>
                     </div>
-                    <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+                    <div className="h-2 bg-slate-700 rounded-full overflow-hidden" suppressHydrationWarning>
                       <div
                         className={`h-full ${getHeatColor(ticker.velocity)} transition-all`}
                         style={{ width: `${(ticker.velocity / 10) * 100}%` }}
+                        suppressHydrationWarning
                       />
                     </div>
                   </div>
                   <div className="flex items-center gap-1 text-xs text-slate-400" suppressHydrationWarning>
                     <TrendIcon trend={ticker.trend} />
-                    <span>{ticker.mentions}</span>
+                    <span suppressHydrationWarning>{ticker.mentions}</span>
                   </div>
                 </div>
               ))}
@@ -193,8 +196,9 @@ export function CategoryHeatmap({ autoRefresh }: CategoryHeatmapProps) {
       autoRefresh={autoRefresh}
     >
       {(rawData, isLoading) => {
+        // Don't use generateMockData() - causes hydration errors due to Math.random()
         const apiResponse = rawData as { success: boolean; data: CategoryHeatmapData } | null;
-        const data = apiResponse?.data || generateMockData();
+        const data = apiResponse?.data || null;
         return <CategoryHeatmapContent data={data} isLoading={isLoading} />;
       }}
     </WidgetWrapper>

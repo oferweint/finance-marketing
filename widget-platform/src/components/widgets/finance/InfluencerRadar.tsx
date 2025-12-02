@@ -231,8 +231,9 @@ export function InfluencerRadar({ ticker = 'BTC', autoRefresh }: InfluencerRadar
       autoRefresh={autoRefresh}
     >
       {(rawData, isLoading) => {
+        // Don't use generateMockData() - causes hydration errors due to Math.random()
         const apiResponse = rawData as { success: boolean; data: InfluencerRadarData } | null;
-        const data = apiResponse?.data || generateMockData(ticker);
+        const data = apiResponse?.data || null;
         return <InfluencerRadarContent data={data} isLoading={isLoading} />;
       }}
     </WidgetWrapper>

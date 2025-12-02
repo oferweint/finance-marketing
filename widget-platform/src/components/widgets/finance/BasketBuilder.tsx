@@ -258,8 +258,9 @@ export function BasketBuilder({ theme = 'AI stocks', autoRefresh }: BasketBuilde
       autoRefresh={autoRefresh}
     >
       {(rawData, isLoading) => {
+        // Don't use generateMockData() - causes hydration errors due to Math.random()
         const apiResponse = rawData as { success: boolean; data: BasketData } | null;
-        const data = apiResponse?.data || generateMockData(theme);
+        const data = apiResponse?.data || null;
         return <BasketBuilderContent data={data} isLoading={isLoading} />;
       }}
     </WidgetWrapper>

@@ -405,8 +405,9 @@ export function VelocityTracker({ ticker = 'TSLA', autoRefresh }: VelocityTracke
     >
       {(rawData, isLoading, isError) => {
         // Extract data from API response structure { success, data, cached }
+        // Don't use generateMockData() - causes hydration errors due to Math.random()
         const apiResponse = rawData as { success: boolean; data: VelocityTrackerData } | null;
-        const data = apiResponse?.data || generateMockData(ticker);
+        const data = apiResponse?.data || null;
         return <VelocityTrackerContent data={data} isLoading={isLoading} />;
       }}
     </WidgetWrapper>

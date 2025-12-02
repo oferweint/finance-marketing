@@ -433,7 +433,7 @@ export async function searchTwitterPosts(
 }
 
 /**
- * Count tweets for a phrase
+ * Count tweets for a phrase (simple, no OR support)
  */
 export async function countTweets(
   phrase: string,
@@ -458,6 +458,46 @@ export async function countTweets(
     }
     if (typeof data.results === 'number') {
       return data.results;
+    }
+  }
+
+  return 0;
+}
+
+/**
+ * Count tweets using search API with OR query support
+ * This is slower than countTweets but supports expanded queries like "TSLA OR Tesla OR $TSLA"
+ * Returns the totalRows from pagination without fetching all results
+ */
+export async function countTweetsExpanded(
+  query: string,
+  options: { startDate?: string; endDate?: string } = {}
+): Promise<number> {
+  const args: Record<string, unknown> = {
+    query,
+    userPrompt: `Count tweets matching: ${query}`,
+    fields: ['id'], // Minimal fields for speed
+  };
+
+  if (options.startDate) args.startDate = options.startDate;
+  if (options.endDate) args.endDate = options.endDate;
+
+  const result = await callTool('getTwitterPostsByKeywords', args);
+
+  if (typeof result === 'object' && result !== null) {
+    const data = result as Record<string, unknown>;
+    if (data.operationId) {
+      const opResult = await waitForOperation(data.operationId as string);
+      const response = opResult as {
+        pagination?: { totalRows: number };
+      };
+      // Return totalRows from pagination - this is the count we want
+      return response.pagination?.totalRows || 0;
+    }
+    // Direct response with pagination
+    const directResponse = data as { pagination?: { totalRows: number } };
+    if (directResponse.pagination?.totalRows) {
+      return directResponse.pagination.totalRows;
     }
   }
 
@@ -780,6 +820,7 @@ export const XpozMCP = {
   searchTwitterPosts,
   searchTwitterPostsComplete,
   countTweets,
+  countTweetsExpanded,
   getPostsByAuthor,
   searchTwitterUsers,
   getTwitterFollowers,
